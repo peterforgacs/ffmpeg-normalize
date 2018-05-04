@@ -1,0 +1,33 @@
+{
+	"name": "ffmpeg-normalize",
+	"version": "1.0.0",
+	"description": "Audio normalization with ffmpeg.",
+	"license": "MIT",
+	"repository": "peterforgacs/ffmpeg-normalize",
+	"author": {
+		"name": "Peter Forgacs",
+		"email": "peter@sexybuddha.com",
+		"url": "https://peterforgacs.github.io"
+	},
+	"engines": {
+		"node": ">=8.3.0"
+	},
+	"scripts": {
+		"start": "node_modules/.bin/tsc src/normalizer.ts"
+	},
+	"files": [
+		"index.js"
+	],
+	"keywords": [
+		"ffmpeg-normalize",
+		"audio normalization",
+		"ebu128"
+	],
+	"dependencies": {
+		"ffmpeg-static": "2.2.1"
+	},
+	"devDependencies": {
+		"@types/node": "^10.0.1",
+		"typescript": "^2.8.3"
+	}
+}

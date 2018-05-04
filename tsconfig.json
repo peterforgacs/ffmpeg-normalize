@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+        "module": "amd",
+        "noImplicitAny": true,
+        "removeComments": true,
+        "preserveConstEnums": true,
+        "outFile": "./build/normalizer.js",
+		"sourceMap": true,
+		"target": "esnext"
+    },
+    "include": [
+        "./src/*.ts"
+    ],
+    "exclude": [
+        "node_modules"
+	]
+}
