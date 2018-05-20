@@ -1,8 +1,12 @@
 # ffmpeg-normalize [![Build Status](https://travis-ci.org/peterforgacs/ffmpeg-normalize.svg?branch=master)](https://travis-ci.org/peterforgacs/ffmpeg-normalize)
 
-> Audio normalization with ffmpeg.
+<p align="center">
+  <a href="https://github.com/peterforgacs/ffmpeg-normalize">
+    <img src="https://cdn.iconscout.com/public/images/icon/free/png-512/ffmpeg-logo-3c576f7243ee4577-512x512.png" alt="sympact" width="150"/>
+  </a>
+</p>
 
-The package contains ffmpeg binaries as a dependency.
+> 🎧 Standalone audio normalization with ffmpeg.
 
 ## Install
 
@@ -13,7 +17,7 @@ $ npm install ffmpeg-normalize
 
 ## Usage
 
-### Ebu128
+### Ebu R128
 
 ```js
 const { normalize } = require('ffmpeg-normalize');
@@ -22,20 +26,21 @@ normalize({
 	input: 'input.mp4',
 	output: 'output.mp4',
 	loudness: {
-		normalization: 'ebu128',
-		target:{
+		normalization: 'ebur128',
+		target: 
+		{
 			input_i: -23,
 			input_lra: 7.0,
 			input_tp: -2.0
 		}
 	}
 })
-then({ normalized }, => {
+then(normalized  => {
 	// Normalized
 })
 .catch(error => {
 	// Some error happened
-})
+});
 ```
 
 ### RMS
@@ -46,91 +51,98 @@ const { normalize } = require('ffmpeg-normalize');
 normalize({
 	input: 'input.mp4',
 	output: 'output.mp4',
-	loudness: {
+	loudness: 
+	{
 		normalization: 'rms',
-		target:{
+		target:
+		{
 			input_i: -23
 		}
 	}
 })
-then({ normalized }, => {
+then(normalized => {
 	// Normalized
 })
 .catch(error => {
 	// Some error happened
-})
+});
 ```
 
-## API
+# API
 
-### normalize({ input, output, loudness })
+## normalize({ input, output, loudness })
 
-#### input
+Parameters:
+* input
+* output
+* loudness
 
-Type: `string`
+### input
+
+Type: `string`  
 Required: `true`
 
 Path to the input file.
 
 #### output
 
-Type: `string`
+Type: `string`  
 Required: `true`
 
 Path to the output file.
 
 ### loudness
 
-Type: `object`
+Type: `object`  
 Required: `true`
 
 Describes a target loudness.
 
-#### loudness normalization
+## loudness normalization
 
-Type: `string`
-Required: `true`
-Options: `ebu128 || rms || peak`
+Type: `string`  
+Required: `true`  
+Options: `ebuR128` || `rms` || `peak`   
 
 The normalization method to use.
-The ebu128 normalization uses a two pass method to measure the original values of the input file.
+The ebu R128 normalization uses a two pass method to measure the original values of the input file.
 The other normalization methods only need the input_i value set.
 
 
-#### loudness input_i
+### loudness input_i
 
-Type: `number`
-Required: `true`
+Type: `number`  
+Required: `true`  
 
-ebu128 normalization
-Min: `-70.0`
-Max: `-5.0`
-Default: `-23`
+ebu R128 normalization  
+Min: `-70.0`  
+Max: `-5.0`  
+Default: `-23`  
 
-rms and peak normalization
-Min: `-99`
-Max: `0`
-Default: `-23`
+rms and peak normalization  
+Min: `-99`  
+Max: `0`  
+Default: `-23`  
 
 The normalization target level in dB/LUFS.
 
-#### loudness input_lra
+### loudness input_lra
 
-Type: `number`
-Required: `false`
-Min: `1.0`
-Max: `20.0`
-Default: `7.0`
+Type: `number`  
+Required: `false`  
+Min: `1.0`  
+Max: `20.0`  
+Default: `7.0`  
 
-Loudness range.
+Loudness range.  
 
-#### loudness input_tp
+### loudness input_tp
 
-Type: `number`
-Required: `false`
-Min: `-9.0`
-Max: `0.0`
-Default: `-2.0`
+Type: `number`  
+Required: `false`  
+Min: `-9.0`  
+Max: `0.0`  
+Default: `-2.0`  
 
 True peak.
 

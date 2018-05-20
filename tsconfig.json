@@ -1,12 +1,11 @@
 {
     "compilerOptions": {
-        "module": "amd",
+        "module": "commonjs",
         "noImplicitAny": true,
         "removeComments": true,
         "preserveConstEnums": true,
-        "outFile": "./build/normalizer.js",
 		"sourceMap": true,
-		"target": "esnext"
+		"target": "es5"
     },
     "include": [
         "./src/*.ts"

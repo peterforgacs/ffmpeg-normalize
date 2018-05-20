@@ -1,5 +1,5 @@
 'use strict';
-import ffmpeg = require('ffmpeg-static');
+import { path } from 'ffmpeg-static';
 import * as child from 'child_process';
 
 class NormalizationSetting
@@ -8,10 +8,17 @@ class NormalizationSetting
 	public max : number;
 	public base : number;
 
-	constructor({
+	constructor(
+	{
 		base,
 		min,
 		max
+	} 
+	: 
+	{
+		base: number,
+		min: number,
+		max: number 
 	})
 	{
 		this.min = min;
@@ -19,8 +26,13 @@ class NormalizationSetting
 		this.base = base;
 	}
 
-	isValid({
+	isValid(
+	{
 		value
+	}
+	:
+	{
+		value: number
 	})
 	{
 		return value >= this.min && value <= this.max;
@@ -30,9 +42,15 @@ class NormalizationSetting
 class Validator
 {
 	private type : string;
-	public validate({
+	public validate(
+	{
 		name,
 		value
+	}
+	:
+	{
+		name: string,
+		value: any
 	})
 	{
 		if (this[name])
@@ -96,7 +114,8 @@ class Loudness
 	public input_thresh?: number;
 	public target_offset?: number;
 
-	constructor({
+	constructor(
+	{
 		input_i,
 		input_lra,
 		input_tp,
@@ -141,7 +160,7 @@ class LoudnessFactory
 	public static buildValidator (normalization : string )
 	{
 		switch (normalization) {
-			case 'ebu128':
+			case 'ebuR128':
 				return new EbuValidator();
 			case 'peak':
 				return new PeakValidator();
@@ -161,7 +180,7 @@ class CommandFactory
 		...rest
 	})
 	{
-		let command = `${ffmpeg.path} -hide_banner `;
+		let command = `${path} -hide_banner `;
 		command +=  `-i ${input} `;
 		command += `-af loudnorm=`;
 		command += `I=${loudness.input_i}:`;
@@ -184,19 +203,25 @@ class CommandFactory
 		measured
 	})
 	{
-		let command = `${ffmpeg.path} -hide_banner `;
+		let command = `${path} -hide_banner `;
 		command +=  `-i ${input} `;
 		command += `-af loudnorm=`;
 		command += `I=${loudness.input_i}:`;
-		command += `LRA=${loudness.input_lra}:`;
-		command += `tp=${loudness.input_tp}:`;
-		if (measured){
+		if (loudness.input_lra){
+			command += `LRA=${loudness.input_lra}:`;
+		}
+		if (loudness.input_tp){
+			command += `tp=${loudness.input_tp}:`;
+		}
+		if (measured)
+		{
 			command += `measured_I=${measured.input_i}:`;
 			command += `measured_LRA=${measured.input_lra}:`;
 			command += `measured_tp=${measured.input_tp}:`;
 			command += `measured_thresh=${measured.input_thresh}:`;
 			command += `offset=${measured.target_offset} `;
-		} else
+		} 
+		else
 		{
 			command += " ";
 		}
@@ -221,9 +246,15 @@ class Command
 	public processBefore? : any;
 	public processAfter? : any;
 
-	constructor({
+	constructor(
+	{
 		text,
 		processAfter
+	}
+	:
+	{
+		text: string,
+		processAfter: Function
 	})
 	{
 		this.state = 'initalized';
@@ -231,10 +262,17 @@ class Command
 		this.processAfter = processAfter;
 	}
 
-	execute({
+	execute(
+	{
 		success,
 		fail
-	}){
+	}
+	:
+	{
+		success: Function,
+		fail: Function
+	})
+	{
 		this.state = 'progress';
 		console.log('Executing: ', this.text);
 
@@ -331,7 +369,6 @@ class Normalizer
 				let command = CommandFactory.change({ input, output, loudness, measured });
 				command.execute({
 					success: ({ stdout, stderr}) => {
-						console.log('Change success')
 						return resolve({
 							normalized: true,
 							info: {
@@ -345,7 +382,6 @@ class Normalizer
 					},
 
 					fail: error => {
-						console.log('Change failed');
 						return reject({
 							normalized: false,
 							error: error,
@@ -400,36 +436,20 @@ class Parser {
 	}
 }
 
-/*
-let input = {
-	input: 'sample_original.mp4',
-	output: 'sample_normalized.mp4',
-	loudness: {
-		normalization: 'ebu128',
-		target: {
-			input_i: 1,
-			input_lra: 2,
-			input_tp: 3,
-			input_thresh: 4,
-			target_offset: 5
-		}
-	}
-};
-*/
-
 module.exports.normalize = input => {
-	let validated = Normalizer.validate(input);
-	console.log(validated);
-	Normalizer.measure(validated)
-	.then( measured => {
-		console.log('MEASURED', measured);
-		return Normalizer.change(measured);
-	})
-	.then(changed => {
-		console.log('CHANGED', changed);
-		return changed;
-	})
-	.catch(error => {
-		console.error(error);
-	});
+	const validated = Normalizer.validate(input);
+	const normalization = input.loudness.normalization || 'ebuR128';
+
+	switch (normalization) {
+		case 'ebuR128':
+			return Normalizer.measure(validated)
+			.then( measured => {
+				return Normalizer.change(measured);
+			});
+		case 'rms':
+		case 'peak':
+			return Normalizer.change(validated);
+		default:
+			throw new Error('Failed audio normalization.');
+	}
 };

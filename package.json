@@ -21,12 +21,14 @@
 	"keywords": [
 		"ffmpeg-normalize",
 		"audio normalization",
-		"ebu128"
+		"volume normalization",
+		"ebu R128"
 	],
 	"dependencies": {
 		"ffmpeg-static": "2.2.1"
 	},
 	"devDependencies": {
+		"@types/ffmpeg-static": "^2.0.0",
 		"@types/node": "^10.0.1",
 		"typescript": "^2.8.3"
 	}
