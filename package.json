@@ -10,10 +10,11 @@
 		"url": "https://peterforgacs.github.io"
 	},
 	"engines": {
-		"node": ">=8.3.0"
+		"node": ">=6.0.0"
 	},
 	"scripts": {
-		"start": "node_modules/.bin/tsc src/normalizer.ts"
+		"start": "node_modules/.bin/tsc src/normalizer.ts",
+		"test": "ava"
 	},
 	"files": [
 		"index.js"
@@ -21,7 +22,7 @@
 	"keywords": [
 		"ffmpeg-normalize",
 		"audio normalization",
-		"volume normalization",
+		"loudness normalization",
 		"ebu R128"
 	],
 	"dependencies": {
@@ -30,6 +31,7 @@
 	"devDependencies": {
 		"@types/ffmpeg-static": "^2.0.0",
 		"@types/node": "^10.0.1",
+		"ava": "^0.25.0",
 		"typescript": "^2.8.3"
 	}
 }

@@ -1,6 +1,6 @@
 'use strict';
 const { 
 	normalize
-} = require('./build/normalizer');
+} = require('./src/normalizer.js');
 
 module.exports = normalize;

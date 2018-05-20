@@ -36,8 +36,7 @@ var NormalizationSetting = (function () {
         this.max = max;
         this.base = base;
     }
-    NormalizationSetting.prototype.isValid = function (_a) {
-        var value = _a.value;
+    NormalizationSetting.prototype.isValid = function (value) {
         return value >= this.min && value <= this.max;
     };
     return NormalizationSetting;
@@ -270,7 +269,6 @@ var Normalizer = (function () {
             command.execute({
                 success: function (_a) {
                     var stdout = _a.stdout, stderr = _a.stderr;
-                    console.log('Change success');
                     return resolve({
                         normalized: true,
                         info: __assign({ input: input,
@@ -280,7 +278,6 @@ var Normalizer = (function () {
                     });
                 },
                 fail: function (error) {
-                    console.log('Change failed');
                     return reject({
                         normalized: false,
                         error: error,
@@ -327,14 +324,11 @@ module.exports.normalize = function (input) {
                 .then(function (measured) {
                 return Normalizer.change(measured);
             });
-            break;
         case 'rms':
         case 'peak':
             return Normalizer.change(validated);
-            break;
         default:
             throw new Error('Failed audio normalization.');
-            break;
     }
 };
 //# sourceMappingURL=normalizer.js.map

@@ -26,14 +26,7 @@ class NormalizationSetting
 		this.base = base;
 	}
 
-	isValid(
-	{
-		value
-	}
-	:
-	{
-		value: number
-	})
+	isValid(value: number)
 	{
 		return value >= this.min && value <= this.max;
 	}
