@@ -6,7 +6,7 @@
   </a>
 </p>
 
-> 🎧 Standalone audio normalization with ffmpeg.
+> 🎧 Audio normalization with ffmpeg.
 
 ## Install
 
