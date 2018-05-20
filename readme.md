@@ -43,31 +43,6 @@ then(normalized  => {
 });
 ```
 
-### RMS
-
-```js
-const { normalize } = require('ffmpeg-normalize');
-
-normalize({
-	input: 'input.mp4',
-	output: 'output.mp4',
-	loudness: 
-	{
-		normalization: 'rms',
-		target:
-		{
-			input_i: -23
-		}
-	}
-})
-then(normalized => {
-	// Normalized
-})
-.catch(error => {
-	// Some error happened
-});
-```
-
 # API
 
 ## normalize({ input, output, loudness })
@@ -102,7 +77,7 @@ Describes a target loudness.
 
 Type: `string`  
 Required: `true`  
-Options: `ebuR128` || `rms` || `peak`   
+Options: `ebuR128` (Experimental `rms` || `peak`   )  
 
 The normalization method to use.
 The ebu R128 normalization uses a two pass method to measure the original values of the input file.
@@ -119,7 +94,7 @@ Min: `-70.0`
 Max: `-5.0`  
 Default: `-23`  
 
-rms and peak normalization  
+rms and peak normalization (Experimental)  
 Min: `-99`  
 Max: `0`  
 Default: `-23`  
