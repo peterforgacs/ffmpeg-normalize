@@ -1,5 +1,5 @@
 'use strict';
-const { 
+const {
 	normalize
 } = require('./src/normalizer.js');
 
