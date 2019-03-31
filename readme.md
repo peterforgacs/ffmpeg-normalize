@@ -2,7 +2,7 @@
 
 <p align="center">
   <a href="https://github.com/peterforgacs/ffmpeg-normalize">
-    <img src="https://cdn.iconscout.com/public/images/icon/free/png-512/ffmpeg-logo-3c576f7243ee4577-512x512.png" alt="sympact" width="150"/>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/7/76/FFmpeg_icon.svg" alt="sympact" width="150"/>
   </a>
 </p>
 
