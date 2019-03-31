@@ -10,10 +10,9 @@
 
 ## Install
 
+```bash
+npm install ffmpeg-normalize
 ```
-$ npm install ffmpeg-normalize
-```
-
 
 ## Usage
 
@@ -23,36 +22,39 @@ $ npm install ffmpeg-normalize
 const normalize = require('ffmpeg-normalize');
 
 normalize({
-	input: 'input.mp4',
-	output: 'output.mp4',
-	loudness: {
-		normalization: 'ebuR128',
-		target:
-		{
-			input_i: -23,
-			input_lra: 7.0,
-			input_tp: -2.0
-		}
-	}
+    input: 'input.mp4',
+    output: 'output.mp4',
+    loudness: {
+        normalization: 'ebuR128',
+        target:
+        {
+            input_i: -23,
+            input_lra: 7.0,
+            input_tp: -2.0
+        }
+    },
+    verbose: true
 })
 .then(normalized  => {
-	// Normalized
+    // Normalized
 })
 .catch(error => {
-	// Some error happened
+    // Some error happened
 });
 ```
 
-# API
+## API
 
-## normalize({ input, output, loudness })
+### normalize({ input, output, loudness, verbose })
 
 Parameters:
+
 * input
 * output
 * loudness
+* verbose
 
-### input
+#### input
 
 Type: `string`  
 Required: `true`
@@ -66,25 +68,32 @@ Required: `true`
 
 Path to the output file.
 
-### loudness
+#### loudness
 
 Type: `object`  
 Required: `true`
 
 Describes a target loudness.
 
-## loudness normalization
+#### verbose
+
+Type: `boolean`  
+Required: `false`  
+Default: `false`
+
+When true sends ffmpeg input to stdout.
+
+### loudness normalization
 
 Type: `string`  
 Required: `true`  
-Options: `ebuR128` (Experimental `rms` || `peak`   )  
+Options: `ebuR128` (Experimental `rms` || `peak`   )
 
 The normalization method to use.
 The ebu R128 normalization uses a two pass method to measure the original values of the input file.
 The other normalization methods only need the input_i value set.
 
-
-### loudness input_i
+#### loudness input_i
 
 Type: `number`  
 Required: `true`  
@@ -101,7 +110,7 @@ Default: `-23`
 
 The normalization target level in dB/LUFS.
 
-### loudness input_lra
+#### loudness input_lra
 
 Type: `number`  
 Required: `false`  
@@ -111,7 +120,7 @@ Default: `7.0`
 
 Loudness range.  
 
-### loudness input_tp
+#### loudness input_tp
 
 Type: `number`  
 Required: `false`  

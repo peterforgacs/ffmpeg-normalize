@@ -2,6 +2,31 @@
 import { path } from 'ffmpeg-static';
 import * as child from 'child_process';
 
+class Logger {
+	isVerbose: boolean;
+
+	setVerbosity(isVerbose : boolean)
+	{
+		this.isVerbose = isVerbose;
+	}
+	log(...rest:any)
+	{
+		if (this.isVerbose)
+		{
+			console.log(...rest);
+		}
+	}
+	error(...rest:any)
+	{
+		if (this.isVerbose)
+		{
+			console.error(rest);
+		}
+	}
+}
+
+const logger = new Logger();
+
 class NormalizationSetting
 {
 	public min : number;
@@ -13,12 +38,12 @@ class NormalizationSetting
 		base,
 		min,
 		max
-	} 
-	: 
+	}
+	:
 	{
 		base: number,
 		min: number,
-		max: number 
+		max: number
 	})
 	{
 		this.min = min;
@@ -50,18 +75,18 @@ class Validator
 		{
 			if (this[name].isValid(Number(value)))
 			{
-				console.log(`Loudness parameter validator:: ${name} is in range.`);
+				logger.log(`Loudness parameter validator:: ${name} is in range.`);
 				return Number(value);
 			}
 			else
 			{
-				console.log(`Loudness parameter validator:: ${name} is not in range setting default ${this[name].base}.`);
+				logger.log(`Loudness parameter validator:: ${name} is not in range setting default ${this[name].base}.`);
 				return this[name].base;
 			}
 		}
 		else
 		{
-			console.log(`Loudness parameter validator:: ${name} is not defined in current normalization method.`);
+			logger.log(`Loudness parameter validator:: ${name} is not defined in current normalization method.`);
 			return null;
 		}
 	}
@@ -114,8 +139,14 @@ class Loudness
 		input_tp,
 		input_thresh,
 		target_offset
+	}: {
+		input_i : number,
+		input_lra: number,
+		input_tp: number,
+		input_thresh: number,
+		target_offset: number
 	},
-		validator?
+		validator?:Validator
 	)
 	{
 		if (validator)
@@ -171,6 +202,9 @@ class CommandFactory
 		input,
 		loudness,
 		...rest
+	}: {
+		input: string,
+		loudness:Loudness
 	})
 	{
 		let command = `${path} -hide_banner `;
@@ -183,7 +217,7 @@ class CommandFactory
 
 		return new Command({
 			text: command,
-			processAfter: ({ stderr }) => {
+			processAfter: ({ stderr } : ChildProcessFailMessage ) => {
 				return Parser.getMeasurements(stderr);
 			}
 		});
@@ -213,7 +247,7 @@ class CommandFactory
 			command += `measured_tp=${measured.input_tp}:`;
 			command += `measured_thresh=${measured.input_thresh}:`;
 			command += `offset=${measured.target_offset} `;
-		} 
+		}
 		else
 		{
 			command += " ";
@@ -267,7 +301,7 @@ class Command
 	})
 	{
 		this.state = 'progress';
-		console.log('Executing: ', this.text);
+		logger.log('Executing: ', this.text);
 
 		child.exec(this.text, (error, stdout, stderr) =>
 		{
@@ -276,7 +310,7 @@ class Command
 			this.stderr = stderr;
 			this.stdout = stdout;
 
-			console.log(stdout, stderr);
+			logger.log(stdout, stderr);
 
 			if (this.error)
 			{
@@ -290,6 +324,18 @@ class Command
 			return success(this);
 		});
 	}
+}
+
+interface ChildProcessSuccessMessage
+{
+	stdout: string,
+	stderr: string,
+	processed: any
+}
+
+interface ChildProcessFailMessage
+{
+	stderr: string
 }
 
 class Normalizer
@@ -323,8 +369,10 @@ class Normalizer
 		return new Promise((resolve, reject) => {
 			let command = CommandFactory.measure({ input, output, loudness });
 			command.execute({
-				success: ({ stdout, stderr, processed}) => {
-					console.log(stderr);
+				success: ({ stdout, stderr, processed} : ChildProcessSuccessMessage ) => {
+					if (stderr){
+						logger.error(stderr);
+					}
 					return resolve({
 						input,
 						output,
@@ -334,8 +382,9 @@ class Normalizer
 					});
 				},
 
-				fail: error => {
+				fail: (error: ChildProcessFailMessage) => {
 					if (error){
+						logger.error(error);
 						return resolve({
 							input,
 							output,
@@ -361,7 +410,7 @@ class Normalizer
 			return new Promise((resolve, reject) => {
 				let command = CommandFactory.change({ input, output, loudness, measured });
 				command.execute({
-					success: ({ stdout, stderr}) => {
+					success: ({ stdout, stderr} : { stdout: string, stderr: string }) => {
 						return resolve({
 							normalized: true,
 							info: {
@@ -374,7 +423,7 @@ class Normalizer
 						});
 					},
 
-					fail: error => {
+					fail: (error: string) => {
 						return reject({
 							normalized: false,
 							error: error,
@@ -423,7 +472,7 @@ class Parser {
 			let measurements = JSON.parse(parsed);
 			return measurements;
 		} catch (error){
-			console.error(error);
+			logger.error(error);
 			return null;
 		};
 	}
@@ -432,6 +481,7 @@ class Parser {
 module.exports.normalize = input => {
 	const validated = Normalizer.validate(input);
 	const normalization = input.loudness.normalization || 'ebuR128';
+	logger.setVerbosity(input.verbose || false );
 
 	switch (normalization) {
 		case 'ebuR128':

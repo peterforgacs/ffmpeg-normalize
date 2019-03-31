@@ -26,10 +26,37 @@ var __rest = (this && this.__rest) || function (s, e) {
             t[p[i]] = s[p[i]];
     return t;
 };
-Object.defineProperty(exports, "__esModule", { value: true });
+exports.__esModule = true;
 var ffmpeg_static_1 = require("ffmpeg-static");
 var child = require("child_process");
-var NormalizationSetting = (function () {
+var Logger = /** @class */ (function () {
+    function Logger() {
+    }
+    Logger.prototype.setVerbosity = function (isVerbose) {
+        this.isVerbose = isVerbose;
+    };
+    Logger.prototype.log = function () {
+        var rest = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            rest[_i] = arguments[_i];
+        }
+        if (this.isVerbose) {
+            console.log.apply(console, rest);
+        }
+    };
+    Logger.prototype.error = function () {
+        var rest = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            rest[_i] = arguments[_i];
+        }
+        if (this.isVerbose) {
+            console.error(rest);
+        }
+    };
+    return Logger;
+}());
+var logger = new Logger();
+var NormalizationSetting = /** @class */ (function () {
     function NormalizationSetting(_a) {
         var base = _a.base, min = _a.min, max = _a.max;
         this.min = min;
@@ -41,29 +68,29 @@ var NormalizationSetting = (function () {
     };
     return NormalizationSetting;
 }());
-var Validator = (function () {
+var Validator = /** @class */ (function () {
     function Validator() {
     }
     Validator.prototype.validate = function (_a) {
         var name = _a.name, value = _a.value;
         if (this[name]) {
             if (this[name].isValid(Number(value))) {
-                console.log("Loudness parameter validator:: " + name + " is in range.");
+                logger.log("Loudness parameter validator:: " + name + " is in range.");
                 return Number(value);
             }
             else {
-                console.log("Loudness parameter validator:: " + name + " is not in range setting default " + this[name].base + ".");
+                logger.log("Loudness parameter validator:: " + name + " is not in range setting default " + this[name].base + ".");
                 return this[name].base;
             }
         }
         else {
-            console.log("Loudness parameter validator:: " + name + " is not defined in current normalization method.");
+            logger.log("Loudness parameter validator:: " + name + " is not defined in current normalization method.");
             return null;
         }
     };
     return Validator;
 }());
-var EbuValidator = (function (_super) {
+var EbuValidator = /** @class */ (function (_super) {
     __extends(EbuValidator, _super);
     function EbuValidator() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -86,7 +113,7 @@ var EbuValidator = (function (_super) {
     }
     return EbuValidator;
 }(Validator));
-var PeakValidator = (function (_super) {
+var PeakValidator = /** @class */ (function (_super) {
     __extends(PeakValidator, _super);
     function PeakValidator() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -99,7 +126,7 @@ var PeakValidator = (function (_super) {
     }
     return PeakValidator;
 }(Validator));
-var RmsValidator = (function (_super) {
+var RmsValidator = /** @class */ (function (_super) {
     __extends(RmsValidator, _super);
     function RmsValidator() {
         return _super !== null && _super.apply(this, arguments) || this;
@@ -107,7 +134,7 @@ var RmsValidator = (function (_super) {
     return RmsValidator;
 }(PeakValidator));
 ;
-var Loudness = (function () {
+var Loudness = /** @class */ (function () {
     function Loudness(_a, validator) {
         var input_i = _a.input_i, input_lra = _a.input_lra, input_tp = _a.input_tp, input_thresh = _a.input_thresh, target_offset = _a.target_offset;
         if (validator) {
@@ -127,7 +154,7 @@ var Loudness = (function () {
     }
     return Loudness;
 }());
-var LoudnessFactory = (function () {
+var LoudnessFactory = /** @class */ (function () {
     function LoudnessFactory() {
     }
     LoudnessFactory.build = function (_a) {
@@ -150,7 +177,7 @@ var LoudnessFactory = (function () {
     };
     return LoudnessFactory;
 }());
-var CommandFactory = (function () {
+var CommandFactory = /** @class */ (function () {
     function CommandFactory() {
     }
     CommandFactory.measure = function (_a) {
@@ -201,7 +228,7 @@ var CommandFactory = (function () {
     };
     return CommandFactory;
 }());
-var Command = (function () {
+var Command = /** @class */ (function () {
     function Command(_a) {
         var text = _a.text, processAfter = _a.processAfter;
         this.state = 'initalized';
@@ -212,13 +239,13 @@ var Command = (function () {
         var _this = this;
         var success = _a.success, fail = _a.fail;
         this.state = 'progress';
-        console.log('Executing: ', this.text);
+        logger.log('Executing: ', this.text);
         child.exec(this.text, function (error, stdout, stderr) {
             _this.state = 'finished';
             _this.error = error;
             _this.stderr = stderr;
             _this.stdout = stdout;
-            console.log(stdout, stderr);
+            logger.log(stdout, stderr);
             if (_this.error) {
                 return fail(_this);
             }
@@ -230,7 +257,7 @@ var Command = (function () {
     };
     return Command;
 }());
-var Normalizer = (function () {
+var Normalizer = /** @class */ (function () {
     function Normalizer() {
     }
     Normalizer.validate = function (_a) {
@@ -247,13 +274,16 @@ var Normalizer = (function () {
             command.execute({
                 success: function (_a) {
                     var stdout = _a.stdout, stderr = _a.stderr, processed = _a.processed;
-                    console.log(stderr);
+                    if (stderr) {
+                        logger.error(stderr);
+                    }
                     return resolve(__assign({ input: input,
                         output: output,
                         loudness: loudness, measured: new Loudness(processed) }, rest));
                 },
                 fail: function (error) {
                     if (error) {
+                        logger.error(error);
                         return resolve(__assign({ input: input,
                             output: output,
                             loudness: loudness, measured: null }, rest));
@@ -293,9 +323,25 @@ var Normalizer = (function () {
     return Normalizer;
 }());
 ;
-var Parser = (function () {
+var Parser = /** @class */ (function () {
     function Parser() {
     }
+    /**
+     * @summary Parse the last 12 line of ffmpeg measure output.
+     * @param {string} stdout - Output from the measure command.
+     * @returns {JSON}
+        {
+        "input_i" : "-25.05",
+        "input_tp" : "-4.90",
+        "input_lra" : "1.80",
+        "input_thresh" : "-35.24",
+        "output_i" : "-25.02",
+        "output_tp" : "-5.12",
+        "output_lra" : "1.50",
+        "output_thresh" : "-35.13",
+        "normalization_type" : "dynamic",
+        "target_offset" : "0.02"
+    }*/
     Parser.getMeasurements = function (stdout) {
         try {
             var data = stdout.trim().split('\n');
@@ -308,7 +354,7 @@ var Parser = (function () {
             return measurements;
         }
         catch (error) {
-            console.error(error);
+            logger.error(error);
             return null;
         }
         ;
@@ -318,6 +364,7 @@ var Parser = (function () {
 module.exports.normalize = function (input) {
     var validated = Normalizer.validate(input);
     var normalization = input.loudness.normalization || 'ebuR128';
+    logger.setVerbosity(input.verbose || false);
     switch (normalization) {
         case 'ebuR128':
             return Normalizer.measure(validated)
@@ -331,4 +378,3 @@ module.exports.normalize = function (input) {
             throw new Error('Failed audio normalization.');
     }
 };
-//# sourceMappingURL=normalizer.js.map
