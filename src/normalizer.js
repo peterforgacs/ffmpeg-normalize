@@ -226,6 +226,30 @@ var CommandFactory = /** @class */ (function () {
             processAfter: function () { }
         });
     };
+    CommandFactory.getDuration = function (input) {
+        var command = ffmpeg_static_1.path + " -hide_banner -i " + input + " -f null -";
+        return new Command({
+            text: command,
+            processAfter: function (_a) {
+                var stderr = _a.stderr;
+                return Parser.getDuration(stderr);
+            }
+        });
+    };
+    CommandFactory.addPadding = function (input, output) {
+        var command = ffmpeg_static_1.path + " -hide_banner -i " + input + " -af apad,atrim=0:3 -y " + output;
+        return new Command({
+            text: command,
+            processAfter: function () { }
+        });
+    };
+    CommandFactory.removePadding = function (input, output, duration) {
+        var command = ffmpeg_static_1.path + " -hide_banner -i " + input + " -af apad,atrim=0:" + duration + " -y " + output;
+        return new Command({
+            text: command,
+            processAfter: function () { }
+        });
+    };
     return CommandFactory;
 }());
 var Command = /** @class */ (function () {
@@ -267,6 +291,55 @@ var Normalizer = /** @class */ (function () {
             output: output,
             loudness: loudness }, rest);
     };
+    Normalizer.addPadding = function (_a, resolve, reject) {
+        var input = _a.input, output = _a.output, originalDuration = _a.originalDuration, rest = __rest(_a, ["input", "output", "originalDuration"]);
+        var command = CommandFactory.addPadding(input, output);
+        command.execute({
+            success: function (_a) {
+                var stdout = _a.stdout, stderr = _a.stderr, processed = _a.processed;
+                if (stderr) {
+                    logger.error(stderr);
+                }
+                return resolve(__assign({ input: output, output: output, padded: true, originalDuration: originalDuration }, rest));
+            },
+            fail: reject
+        });
+    };
+    Normalizer.removePadding = function (_a, resolve, reject) {
+        var input = _a.input, output = _a.output, originalDuration = _a.originalDuration, rest = __rest(_a, ["input", "output", "originalDuration"]);
+        var command = CommandFactory.removePadding(input, output, originalDuration);
+        command.execute({
+            success: function (_a) {
+                var stdout = _a.stdout, stderr = _a.stderr, processed = _a.processed;
+                if (stderr) {
+                    logger.error(stderr);
+                }
+                return resolve(__assign({ input: input, output: output, originalDuration: originalDuration }, rest));
+            },
+            fail: reject
+        });
+    };
+    Normalizer.pad = function (_a) {
+        var input = _a.input, rest = __rest(_a, ["input"]);
+        return new Promise(function (resolve, reject) {
+            var command = CommandFactory.getDuration(input);
+            command.execute({
+                success: function (_a) {
+                    var stdout = _a.stdout, stderr = _a.stderr, processed = _a.processed;
+                    if (stderr) {
+                        logger.error(stderr);
+                    }
+                    if (processed < 3) {
+                        Normalizer.addPadding(__assign({ input: input, originalDuration: processed }, rest), resolve, reject);
+                    }
+                    else {
+                        return resolve(__assign({ input: input }, rest));
+                    }
+                },
+                fail: reject
+            });
+        });
+    };
     Normalizer.measure = function (_a) {
         var input = _a.input, output = _a.output, loudness = _a.loudness, rest = __rest(_a, ["input", "output", "loudness"]);
         return new Promise(function (resolve, reject) {
@@ -293,19 +366,24 @@ var Normalizer = /** @class */ (function () {
         });
     };
     Normalizer.change = function (_a) {
-        var input = _a.input, output = _a.output, loudness = _a.loudness, measured = _a.measured, rest = __rest(_a, ["input", "output", "loudness", "measured"]);
+        var input = _a.input, output = _a.output, loudness = _a.loudness, measured = _a.measured, padded = _a.padded, rest = __rest(_a, ["input", "output", "loudness", "measured", "padded"]);
         return new Promise(function (resolve, reject) {
             var command = CommandFactory.change({ input: input, output: output, loudness: loudness, measured: measured });
             command.execute({
                 success: function (_a) {
                     var stdout = _a.stdout, stderr = _a.stderr;
-                    return resolve({
-                        normalized: true,
-                        info: __assign({ input: input,
-                            output: output,
-                            loudness: loudness,
-                            measured: measured }, rest)
-                    });
+                    if (padded) {
+                        Normalizer.removePadding(__assign({ input: input, output: output, loudness: loudness, measured: measured, padded: padded }, rest), resolve, reject);
+                    }
+                    else {
+                        return resolve({
+                            normalized: true,
+                            info: __assign({ input: input,
+                                output: output,
+                                loudness: loudness,
+                                measured: measured }, rest)
+                        });
+                    }
                 },
                 fail: function (error) {
                     return reject({
@@ -359,22 +437,43 @@ var Parser = /** @class */ (function () {
         }
         ;
     };
+    /**
+     * @summary Parse the ffmpeg output to extract the duration of a file.
+     * @param {string} stdout - Output from the command
+     * @returns Duration in seconds
+     */
+    Parser.getDuration = function (stdout) {
+        try {
+            var durationRegex = /Duration:\s+(\d\d):(\d\d):(\d\d.\d+)/;
+            var match = durationRegex.exec(stdout);
+            if (match) {
+                return 3600 * Number(match[1]) + 60 * Number(match[2]) + Number(match[3]);
+            }
+            logger.error('Did not find duration');
+        }
+        catch (error) {
+            logger.error(error);
+            return null;
+        }
+    };
     return Parser;
 }());
 module.exports.normalize = function (input) {
     var validated = Normalizer.validate(input);
     var normalization = input.loudness.normalization || 'ebuR128';
     logger.setVerbosity(input.verbose || false);
-    switch (normalization) {
-        case 'ebuR128':
-            return Normalizer.measure(validated)
-                .then(function (measured) {
-                return Normalizer.change(measured);
-            });
-        case 'rms':
-        case 'peak':
-            return Normalizer.change(validated);
-        default:
-            throw new Error('Failed audio normalization.');
-    }
+    return Normalizer.pad(validated).then(function (paddedInput) {
+        switch (normalization) {
+            case 'ebuR128':
+                return Normalizer.measure(paddedInput)
+                    .then(function (measured) {
+                    return Normalizer.change(measured);
+                });
+            case 'rms':
+            case 'peak':
+                return Normalizer.change(paddedInput);
+            default:
+                throw new Error('Failed audio normalization.');
+        }
+    });
 };
