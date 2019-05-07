@@ -9,14 +9,14 @@ class Logger {
 	{
 		this.isVerbose = isVerbose;
 	}
-	log(...rest:any)
+	log(...rest)
 	{
 		if (this.isVerbose)
 		{
 			console.log(...rest);
 		}
 	}
-	error(...rest:any)
+	error(...rest)
 	{
 		if (this.isVerbose)
 		{
@@ -202,9 +202,6 @@ class CommandFactory
 		input,
 		loudness,
 		...rest
-	}: {
-		input: string,
-		loudness:Loudness
 	})
 	{
 		let command = `${path} -hide_banner `;
@@ -255,6 +252,32 @@ class CommandFactory
 		command += `-ar 48k -y `;
 		command += `${output}`;
 
+		return new Command({
+			text: command,
+			processAfter: () => {}
+		});
+	}
+
+	static getDuration(input: any) {
+	    const command = `${path} -hide_banner -i ${input} -f null -`;
+        return new Command({
+            text: command,
+            processAfter: ({ stderr } : ChildProcessFailMessage ) => {
+                return Parser.getDuration(stderr);
+            }
+        });
+    }
+
+    static addPadding(input: any, output: any) {
+		const command = `${path} -hide_banner -i ${input} -af apad,atrim=0:3 -y ${output}`;
+		return new Command({
+			text: command,
+			processAfter: () => {}
+		});
+	}
+
+	static removePadding(input: any, output: any, duration: any) {
+		const command = `${path} -hide_banner -i ${input} -af apad,atrim=0:${duration} -y ${output}`;
 		return new Command({
 			text: command,
 			processAfter: () => {}
@@ -358,6 +381,71 @@ class Normalizer
 		}
 	}
 
+	private static addPadding({input, output, originalDuration, ...rest}, resolve, reject) {
+		let command = CommandFactory.addPadding(input, output);
+		command.execute({
+			success: ({stdout, stderr, processed}: ChildProcessSuccessMessage) => {
+				if (stderr) {
+					logger.error(stderr);
+				}
+
+				return resolve({
+					input: output, // Use padded file
+					output: output,
+					padded: true,
+					originalDuration,
+					...rest
+				});
+			},
+
+			fail: reject
+		});
+	}
+
+	private static removePadding({input, output, originalDuration, ...rest}, resolve, reject) {
+		let command = CommandFactory.removePadding(input, output, originalDuration);
+		command.execute({
+			success: ({stdout, stderr, processed}: ChildProcessSuccessMessage) => {
+				if (stderr) {
+					logger.error(stderr);
+				}
+
+				return resolve({
+					input: input,
+					output: output,
+					originalDuration,
+					...rest
+				});
+			},
+
+			fail: reject
+		});
+	}
+
+	public static pad({input, ...rest}) {
+        return new Promise((resolve, reject) => {
+            let command = CommandFactory.getDuration(input);
+            command.execute({
+                success: ({ stdout, stderr, processed} : ChildProcessSuccessMessage ) => {
+                    if (stderr){
+                        logger.error(stderr);
+                    }
+
+                    if (processed < 3) {
+						Normalizer.addPadding({input, originalDuration: processed, ...rest} as any, resolve, reject);
+                    } else {
+						return resolve({
+							input,
+							...rest
+						});
+					}
+                },
+
+                fail: reject
+            });
+        });
+    }
+
 	public static measure (
 	{
 		input,
@@ -404,6 +492,7 @@ class Normalizer
 			output,
 			loudness,
 			measured,
+			padded,
 			...rest
 		})
 		{
@@ -411,16 +500,23 @@ class Normalizer
 				let command = CommandFactory.change({ input, output, loudness, measured });
 				command.execute({
 					success: ({ stdout, stderr} : { stdout: string, stderr: string }) => {
-						return resolve({
-							normalized: true,
-							info: {
-								input,
-								output,
-								loudness,
-								measured,
-								...rest
-							}
-						});
+
+						if (padded) {
+							Normalizer.removePadding({input, output, loudness, measured, padded, ...rest} as any, resolve, reject);
+						} else {
+							return resolve({
+								normalized: true,
+								info: {
+									input,
+									output,
+									loudness,
+									measured,
+									...rest
+								}
+							});
+						}
+
+
 					},
 
 					fail: (error: string) => {
@@ -476,6 +572,25 @@ class Parser {
 			return null;
 		};
 	}
+
+	/**
+	 * @summary Parse the ffmpeg output to extract the duration of a file.
+	 * @param {string} stdout - Output from the command
+	 * @returns Duration in seconds
+	 */
+	static getDuration(stdout : string): number {
+        try {
+            const durationRegex = /Duration:\s+(\d\d):(\d\d):(\d\d.\d+)/;
+            const match = durationRegex.exec(stdout);
+            if (match) {
+                return 3600 * Number(match[1]) +  60 * Number(match[2]) + Number(match[3]);
+            }
+            logger.error('Did not find duration');
+        } catch (error){
+            logger.error(error);
+            return null;
+        }
+    }
 }
 
 module.exports.normalize = input => {
@@ -483,16 +598,20 @@ module.exports.normalize = input => {
 	const normalization = input.loudness.normalization || 'ebuR128';
 	logger.setVerbosity(input.verbose || false );
 
-	switch (normalization) {
-		case 'ebuR128':
-			return Normalizer.measure(validated)
-			.then( measured => {
-				return Normalizer.change(measured);
-			});
-		case 'rms':
-		case 'peak':
-			return Normalizer.change(validated);
-		default:
-			throw new Error('Failed audio normalization.');
-	}
+	return Normalizer.pad(validated).then(paddedInput => {
+
+		switch (normalization) {
+			case 'ebuR128':
+				return Normalizer.measure(paddedInput as any)
+					.then( measured => {
+						return Normalizer.change(measured as any);
+					});
+			case 'rms':
+			case 'peak':
+				return Normalizer.change(paddedInput as any);
+			default:
+				throw new Error('Failed audio normalization.');
+		}
+	});
+
 };

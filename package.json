@@ -13,7 +13,7 @@
 		"node": ">=6.0.0"
 	},
 	"scripts": {
-		"start": "node_modules/.bin/tsc src/normalizer.ts",
+		"start": "node_modules/.bin/tsc --lib es2015 src/normalizer.ts",
 		"test": "ava"
 	},
 	"files": [
