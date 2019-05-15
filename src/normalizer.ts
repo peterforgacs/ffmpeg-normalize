@@ -207,7 +207,7 @@ class CommandFactory
 	})
 	{
 		let command = `${ffmpeg_path} -hide_banner `;
-		command +=  `-i ${input} `;
+		command +=  `-i "${input}" `;
 		command += `-af loudnorm=`;
 		command += `I=${loudness.input_i}:`;
 		command += `LRA=${loudness.input_lra}:`;
@@ -230,7 +230,7 @@ class CommandFactory
 	})
 	{
 		let command = `${ffmpeg_path} -hide_banner `;
-		command +=  `-i ${input} `;
+		command +=  `-i "${input}" `;
 		command += `-af loudnorm=`;
 		command += `I=${loudness.input_i}:`;
 		if (loudness.input_lra){
@@ -252,7 +252,7 @@ class CommandFactory
 			command += " ";
 		}
 		command += `-ar 48k -y `;
-		command += `${output}`;
+		command += `"${output}"`;
 
 		return new Command({
 			text: command,
@@ -261,7 +261,7 @@ class CommandFactory
 	}
 
 	static getDuration(input: any) {
-	    const command = `${ffmpeg_path} -hide_banner -i ${input} -f null -`;
+	    const command = `${ffmpeg_path} -hide_banner -i "${input}" -f null -`;
         return new Command({
             text: command,
             processAfter: ({ stderr } : ChildProcessFailMessage ) => {
@@ -271,7 +271,7 @@ class CommandFactory
     }
 
     static addPadding(input: any, output: any) {
-		const command = `${ffmpeg_path} -hide_banner -i ${input} -af apad,atrim=0:3 -y ${output}`;
+		const command = `${ffmpeg_path} -hide_banner -i "${input}" -af apad,atrim=0:3 -y "${output}"`;
 		return new Command({
 			text: command,
 			processAfter: () => {}
@@ -279,7 +279,7 @@ class CommandFactory
 	}
 
 	static removePadding(input: any, output: any, duration: any, temporaryFile: string) {
-		const command = `${ffmpeg_path} -hide_banner -i ${input} -af apad,atrim=0:${duration} -y ${output}`;
+		const command = `${ffmpeg_path} -hide_banner -i "${input}" -af apad,atrim=0:${duration} -y "${output}"`;
 		return new Command({
 			text: command,
 			processAfter: () => {

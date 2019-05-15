@@ -30,8 +30,8 @@ test('normalize ebu R128', t => {
 
 test('normalize ebu R128 for file with < 3 sec duration', t => {
 	return normalize({
-		input: __dirname + '/sample_short.mp3',
-		output: __dirname + '/sample_short.processed.mp3',
+		input: __dirname + '/sample short.mp3',
+		output: __dirname + '/sample short.processed.mp3',
 		loudness: {
 			normalization: 'ebuR128',
 			target:
