@@ -29,6 +29,8 @@ var __rest = (this && this.__rest) || function (s, e) {
 exports.__esModule = true;
 var ffmpeg_static_1 = require("ffmpeg-static");
 var child = require("child_process");
+var path = require("path");
+var fs = require("fs");
 var Logger = /** @class */ (function () {
     function Logger() {
     }
@@ -243,11 +245,13 @@ var CommandFactory = /** @class */ (function () {
             processAfter: function () { }
         });
     };
-    CommandFactory.removePadding = function (input, output, duration) {
+    CommandFactory.removePadding = function (input, output, duration, temporaryFile) {
         var command = ffmpeg_static_1.path + " -hide_banner -i " + input + " -af apad,atrim=0:" + duration + " -y " + output;
         return new Command({
             text: command,
-            processAfter: function () { }
+            processAfter: function () {
+                fs.unlinkSync(temporaryFile);
+            }
         });
     };
     return CommandFactory;
@@ -293,21 +297,23 @@ var Normalizer = /** @class */ (function () {
     };
     Normalizer.addPadding = function (_a, resolve, reject) {
         var input = _a.input, output = _a.output, originalDuration = _a.originalDuration, rest = __rest(_a, ["input", "output", "originalDuration"]);
-        var command = CommandFactory.addPadding(input, output);
+        var basename = path.basename(output);
+        var tempOutput = path.join(path.dirname(output), '__temporary.' + basename);
+        var command = CommandFactory.addPadding(input, tempOutput);
         command.execute({
             success: function (_a) {
                 var stdout = _a.stdout, stderr = _a.stderr, processed = _a.processed;
                 if (stderr) {
                     logger.error(stderr);
                 }
-                return resolve(__assign({ input: output, output: output, padded: true, originalDuration: originalDuration }, rest));
+                return resolve(__assign({ input: tempOutput, output: output, padded: true, originalDuration: originalDuration, temporaryFile: tempOutput }, rest));
             },
             fail: reject
         });
     };
     Normalizer.removePadding = function (_a, resolve, reject) {
-        var input = _a.input, output = _a.output, originalDuration = _a.originalDuration, rest = __rest(_a, ["input", "output", "originalDuration"]);
-        var command = CommandFactory.removePadding(input, output, originalDuration);
+        var input = _a.input, output = _a.output, originalDuration = _a.originalDuration, temporaryFile = _a.temporaryFile, rest = __rest(_a, ["input", "output", "originalDuration", "temporaryFile"]);
+        var command = CommandFactory.removePadding(input, output, originalDuration, temporaryFile);
         command.execute({
             success: function (_a) {
                 var stdout = _a.stdout, stderr = _a.stderr, processed = _a.processed;
