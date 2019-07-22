@@ -27,7 +27,7 @@
 		"ebu R128"
 	],
 	"dependencies": {
-		"ffmpeg-static": "2.2.1"
+		"ffmpeg-static": "2.5.0"
 	},
 	"devDependencies": {
 		"@types/ffmpeg-static": "^2.0.0",
