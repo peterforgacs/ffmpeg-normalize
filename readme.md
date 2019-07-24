@@ -1,4 +1,4 @@
-# ffmpeg-normalize [![Build Status](https://travis-ci.org/peterforgacs/ffmpeg-normalize.svg?branch=master)](https://travis-ci.org/peterforgacs/ffmpeg-normalize)
+# ffmpeg-normalize [![Build Status](https://travis-ci.org/peterforgacs/ffmpeg-normalize.svg?branch=master)](https://travis-ci.org/peterforgacs/ffmpeg-normalize)[![Dependabot Status](https://api.dependabot.com/badges/status?host=github&repo=peterforgacs/ffmpeg-normalize)](https://dependabot.com)
 
 <p align="center">
   <a href="https://github.com/peterforgacs/ffmpeg-normalize">
