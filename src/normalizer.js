@@ -36,6 +36,7 @@ var __rest = (this && this.__rest) || function (s, e) {
 };
 exports.__esModule = true;
 var ffmpeg_static_1 = require("ffmpeg-static");
+var ffprobe_static_1 = require("ffprobe-static");
 var child = require("child_process");
 var path = require("path");
 var fs = require("fs");
@@ -297,11 +298,46 @@ var Normalizer = /** @class */ (function () {
     function Normalizer() {
     }
     Normalizer.validate = function (_a) {
+        var _this = this;
         var input = _a.input, output = _a.output, loudness = _a.loudness, rest = __rest(_a, ["input", "output", "loudness"]);
-        loudness = LoudnessFactory.build(loudness);
-        return __assign({ input: input,
-            output: output,
-            loudness: loudness }, rest);
+        return new Promise(function (resolve, reject) {
+            loudness = LoudnessFactory.build(loudness);
+            return _this.fileHasAudio(input)
+                .then(function (hasAudio) {
+                if (hasAudio) {
+                    return resolve(__assign({ input: input,
+                        output: output,
+                        loudness: loudness }, rest));
+                }
+                else {
+                    return reject(new Error("No audio found on " + input + "."));
+                }
+            });
+        });
+    };
+    Normalizer.fileHasAudio = function (input) {
+        return new Promise(function (resolve) {
+            try {
+                var command = new Command({ text: ffprobe_static_1.path + " -i " + input + " -show_streams -select_streams a -loglevel error" });
+                command.execute({
+                    success: function (_a) {
+                        var stdout = _a.stdout, stderr = _a.stderr;
+                        var numberOfAudioStreams = Parser.getNumberOfAudioStreams(stdout);
+                        console.log('#', numberOfAudioStreams);
+                        return resolve(numberOfAudioStreams > 0);
+                    },
+                    fail: function (_a) {
+                        var stderr = _a.stderr;
+                        logger.error(stderr);
+                        return resolve(false);
+                    }
+                });
+            }
+            catch (error) {
+                logger.error(error);
+                return resolve(false);
+            }
+        });
     };
     Normalizer.addPadding = function (_a, resolve, reject) {
         var input = _a.input, output = _a.output, originalDuration = _a.originalDuration, rest = __rest(_a, ["input", "output", "originalDuration"]);
@@ -470,24 +506,39 @@ var Parser = /** @class */ (function () {
             return null;
         }
     };
+    /**
+     * @summary Parses ffprobe output to check if the media file has audio streams.
+     * @param {string} stdout
+     * @returns {number} number of audio streams
+     */
+    Parser.getNumberOfAudioStreams = function (stdout) {
+        var matches = stdout.match(/\/STREAM/g);
+        return matches ? matches.length : 0;
+    };
     return Parser;
 }());
 module.exports.normalize = function (input) {
-    var validated = Normalizer.validate(input);
-    var normalization = input.loudness.normalization || 'ebuR128';
-    logger.setVerbosity(input.verbose || false);
-    return Normalizer.pad(validated).then(function (paddedInput) {
-        switch (normalization) {
-            case 'ebuR128':
-                return Normalizer.measure(paddedInput)
-                    .then(function (measured) {
-                    return Normalizer.change(measured);
-                });
-            case 'rms':
-            case 'peak':
-                return Normalizer.change(paddedInput);
-            default:
-                throw new Error('Failed audio normalization.');
-        }
+    return new Promise(function (resolve, reject) {
+        logger.setVerbosity(input.verbose || false);
+        var normalization = input.loudness.normalization || 'ebuR128';
+        return Normalizer.validate(input)
+            .then(function (validated) { return Normalizer.pad(validated); })
+            .then(function (paddedInput) {
+            switch (normalization) {
+                case 'ebuR128':
+                    return Normalizer.measure(paddedInput)
+                        .then(function (measured) {
+                        return resolve(Normalizer.change(measured));
+                    });
+                case 'rms':
+                case 'peak':
+                    return resolve(Normalizer.change(paddedInput));
+                default:
+                    throw new Error('Not supported normalization type.');
+            }
+        })["catch"](function (error) {
+            logger.error(error);
+            return reject(__assign({ normalized: false, error: error.message ? error.message : error }, input));
+        });
     });
 };

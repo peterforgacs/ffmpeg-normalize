@@ -1,27 +1,33 @@
 'use strict';
 import { path as ffmpeg_path } from 'ffmpeg-static';
+import { path as ffprobe_path } from 'ffprobe-static';
 import * as child from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 
+interface ChildProcessSuccessMessage {
+	stdout: string,
+	stderr: string,
+	processed: any
+}
+
+interface ChildProcessFailMessage {
+	stderr: string
+}
+
 class Logger {
 	isVerbose: boolean;
 
-	setVerbosity(isVerbose : boolean)
-	{
+	setVerbosity(isVerbose: boolean) {
 		this.isVerbose = isVerbose;
 	}
-	log(...rest)
-	{
-		if (this.isVerbose)
-		{
+	log(...rest : any) {
+		if (this.isVerbose) {
 			console.log(...rest);
 		}
 	}
-	error(...rest)
-	{
-		if (this.isVerbose)
-		{
+	error(...rest : any) {
+		if (this.isVerbose) {
 			console.error(rest);
 		}
 	}
@@ -29,73 +35,63 @@ class Logger {
 
 const logger = new Logger();
 
-class NormalizationSetting
-{
-	public min : number;
-	public max : number;
-	public base : number;
+class NormalizationSetting {
+	public min: number;
+	public max: number;
+	public base: number;
 
 	constructor(
-	{
-		base,
-		min,
-		max
-	}
-	:
-	{
-		base: number,
-		min: number,
-		max: number
-	})
-	{
+		{
+			base,
+			min,
+			max
+		}
+			:
+			{
+				base: number,
+				min: number,
+				max: number
+			}) {
 		this.min = min;
 		this.max = max;
 		this.base = base;
 	}
 
-	isValid(value: number)
-	{
+	isValid(value: number) {
 		return value >= this.min && value <= this.max;
 	}
 }
 
-class Validator
-{
-	private type : string;
+class Validator {
+	private type: string;
 	public validate(
-	{
-		name,
-		value
-	}
-	:
-	{
-		name: string,
-		value: any
-	})
-	{
-		if (this[name])
 		{
-			if (this[name].isValid(Number(value)))
+			name,
+			value
+		}
+			:
 			{
+				name: string,
+				value: any
+			}) {
+		if (this[name]) {
+			if (this[name].isValid(Number(value))) {
 				logger.log(`Loudness parameter validator:: ${name} is in range.`);
 				return Number(value);
 			}
-			else
-			{
+			else {
 				logger.log(`Loudness parameter validator:: ${name} is not in range setting default ${this[name].base}.`);
 				return this[name].base;
 			}
 		}
-		else
-		{
+		else {
 			logger.log(`Loudness parameter validator:: ${name} is not defined in current normalization method.`);
 			return null;
 		}
 	}
 }
 
-class EbuValidator extends Validator
-{
+class EbuValidator extends Validator {
 	input_i = new NormalizationSetting({
 		base: -23,
 		min: -70.0,
@@ -108,15 +104,14 @@ class EbuValidator extends Validator
 		max: 20.0
 	});
 
-	input_tp = new NormalizationSetting ({
+	input_tp = new NormalizationSetting({
 		base: -2.0,
 		min: -9.0,
 		max: 0.0
 	});
 }
 
-class PeakValidator extends Validator
-{
+class PeakValidator extends Validator {
 	input_i = new NormalizationSetting({
 		base: -23,
 		min: -99,
@@ -124,10 +119,9 @@ class PeakValidator extends Validator
 	});
 }
 
-class RmsValidator extends PeakValidator {};
+class RmsValidator extends PeakValidator { };
 
-class Loudness
-{
+class Loudness {
 	public input_i: number;
 	public input_lra?: number;
 	public input_tp?: number;
@@ -135,32 +129,29 @@ class Loudness
 	public target_offset?: number;
 
 	constructor(
-	{
-		input_i,
-		input_lra,
-		input_tp,
-		input_thresh,
-		target_offset
-	}: {
-		input_i : number,
-		input_lra: number,
-		input_tp: number,
-		input_thresh: number,
-		target_offset: number
-	},
-		validator?:Validator
-	)
-	{
-		if (validator)
 		{
-			this.input_i       = validator.validate({ name: 'input_i', value: input_i });
-			this.input_lra     = validator.validate({ name: 'input_lra', value: input_lra });
-			this.input_tp      = validator.validate({ name: 'input_tp', value: input_tp  });
-			this.input_thresh  = validator.validate({ name: 'input_thresh', value: input_thresh });
+			input_i,
+			input_lra,
+			input_tp,
+			input_thresh,
+			target_offset
+		}: {
+			input_i: number,
+			input_lra: number,
+			input_tp: number,
+			input_thresh: number,
+			target_offset: number
+		},
+		validator?: Validator
+	) {
+		if (validator) {
+			this.input_i = validator.validate({ name: 'input_i', value: input_i });
+			this.input_lra = validator.validate({ name: 'input_lra', value: input_lra });
+			this.input_tp = validator.validate({ name: 'input_tp', value: input_tp });
+			this.input_thresh = validator.validate({ name: 'input_thresh', value: input_thresh });
 			this.target_offset = validator.validate({ name: 'target_offset', value: target_offset });
 		}
-		else
-		{
+		else {
 			this.input_i = Number(input_i);
 			this.input_lra = Number(input_lra);
 			this.input_tp = Number(input_tp);
@@ -170,21 +161,17 @@ class Loudness
 	}
 }
 
-class LoudnessFactory
-{
+class LoudnessFactory {
 	public static build({
 		normalization,
 		target
-	})
-	: Loudness
-	{
+	}): Loudness {
 		let validator = LoudnessFactory.buildValidator(normalization);
 		let loudness = new Loudness(target, validator);
 		return loudness;
 	}
 
-	public static buildValidator (normalization : string )
-	{
+	public static buildValidator(normalization: string) {
 		switch (normalization) {
 			case 'ebuR128':
 				return new EbuValidator();
@@ -198,16 +185,14 @@ class LoudnessFactory
 	}
 }
 
-class CommandFactory
-{
+class CommandFactory {
 	static measure({
 		input,
 		loudness,
 		...rest
-	})
-	{
+	}) {
 		let command = `${ffmpeg_path} -hide_banner `;
-		command +=  `-i "${input}" `;
+		command += `-i "${input}" `;
 		command += `-af loudnorm=`;
 		command += `I=${loudness.input_i}:`;
 		command += `LRA=${loudness.input_lra}:`;
@@ -216,7 +201,7 @@ class CommandFactory
 
 		return new Command({
 			text: command,
-			processAfter: ({ stderr } : ChildProcessFailMessage ) => {
+			processAfter: ({ stderr }: ChildProcessFailMessage) => {
 				return Parser.getMeasurements(stderr);
 			}
 		});
@@ -227,28 +212,25 @@ class CommandFactory
 		output,
 		loudness,
 		measured
-	})
-	{
+	}) {
 		let command = `${ffmpeg_path} -hide_banner `;
-		command +=  `-i "${input}" `;
+		command += `-i "${input}" `;
 		command += `-af loudnorm=`;
 		command += `I=${loudness.input_i}:`;
-		if (loudness.input_lra){
+		if (loudness.input_lra) {
 			command += `LRA=${loudness.input_lra}:`;
 		}
-		if (loudness.input_tp){
+		if (loudness.input_tp) {
 			command += `tp=${loudness.input_tp}:`;
 		}
-		if (measured)
-		{
+		if (measured) {
 			command += `measured_I=${measured.input_i}:`;
 			command += `measured_LRA=${measured.input_lra}:`;
 			command += `measured_tp=${measured.input_tp}:`;
 			command += `measured_thresh=${measured.input_thresh}:`;
 			command += `offset=${measured.target_offset} `;
 		}
-		else
-		{
+		else {
 			command += " ";
 		}
 		command += `-ar 48k -y `;
@@ -256,25 +238,25 @@ class CommandFactory
 
 		return new Command({
 			text: command,
-			processAfter: () => {}
+			processAfter: () => { }
 		});
 	}
 
 	static getDuration(input: any) {
-	    const command = `${ffmpeg_path} -hide_banner -i "${input}" -f null -`;
-        return new Command({
-            text: command,
-            processAfter: ({ stderr } : ChildProcessFailMessage ) => {
-                return Parser.getDuration(stderr);
-            }
-        });
-    }
+		const command = `${ffmpeg_path} -hide_banner -i "${input}" -f null -`;
+		return new Command({
+			text: command,
+			processAfter: ({ stderr }: ChildProcessFailMessage) => {
+				return Parser.getDuration(stderr);
+			}
+		});
+	}
 
-    static addPadding(input: any, output: any) {
+	static addPadding(input: any, output: any) {
 		const command = `${ffmpeg_path} -hide_banner -i "${input}" -af apad,atrim=0:3 -y "${output}"`;
 		return new Command({
 			text: command,
-			processAfter: () => {}
+			processAfter: () => { }
 		});
 	}
 
@@ -289,49 +271,45 @@ class CommandFactory
 	}
 }
 
-class Command
-{
-	private text   : string;
-	public error?  : Error;
-	public stderr? : string;
-	public stdout? : string;
-	public state ? : string;
-	public processed? : any;
-	public processBefore? : any;
-	public processAfter? : any;
+class Command {
+	private text: string;
+	public error?: Error;
+	public stderr?: string;
+	public stdout?: string;
+	public state?: string;
+	public processed?: any;
+	public processBefore?: any;
+	public processAfter?: any;
 
 	constructor(
-	{
-		text,
-		processAfter
-	}
-	:
-	{
-		text: string,
-		processAfter: Function
-	})
-	{
+		{
+			text,
+			processAfter
+		}
+			:
+			{
+				text: string,
+				processAfter?: Function
+			}) {
 		this.state = 'initalized';
 		this.text = text;
 		this.processAfter = processAfter;
 	}
 
 	execute(
-	{
-		success,
-		fail
-	}
-	:
-	{
-		success: Function,
-		fail: Function
-	})
-	{
+		{
+			success,
+			fail
+		}
+			:
+			{
+				success: Function,
+				fail: Function
+			}) {
 		this.state = 'progress';
 		logger.log('Executing: ', this.text);
 
-		child.exec(this.text, (error, stdout, stderr) =>
-		{
+		child.exec(this.text, (error, stdout, stderr) => {
 			this.state = 'finished';
 			this.error = error;
 			this.stderr = stderr;
@@ -339,12 +317,10 @@ class Command
 
 			logger.log(stdout, stderr);
 
-			if (this.error)
-			{
+			if (this.error) {
 				return fail(this);
 			}
-			else if (this.processAfter)
-			{
+			else if (this.processAfter) {
 				this.processed = this.processAfter(this);
 			}
 
@@ -353,46 +329,64 @@ class Command
 	}
 }
 
-interface ChildProcessSuccessMessage
-{
-	stdout: string,
-	stderr: string,
-	processed: any
-}
-
-interface ChildProcessFailMessage
-{
-	stderr: string
-}
-
-class Normalizer
-{
+class Normalizer {
 	public static validate(
-	{
-		input,
-		output,
-		loudness,
-		...rest
-	}
-	)
-	{
-		loudness = LoudnessFactory.build(loudness);
-		return {
+		{
 			input,
 			output,
 			loudness,
 			...rest
 		}
+	) {
+		return new Promise((resolve, reject) => {
+			loudness = LoudnessFactory.build(loudness);
+			return this.fileHasAudio(input)
+			.then((hasAudio) => {
+				if (hasAudio){
+					return resolve({
+						input,
+						output,
+						loudness,
+						...rest
+					})
+				}
+				else {
+					return reject(new Error(`No audio found on ${input}.`));
+				}
+			})
+		})
 	}
 
-	private static addPadding({input, output, originalDuration, ...rest}, resolve, reject) {
+	private static fileHasAudio(input : string ) : Promise<boolean> {
+		return new Promise( (resolve) => {
+			try {
+				let command = new Command({ text: `${ffprobe_path} -i ${input} -show_streams -select_streams a -loglevel error` });
+				command.execute({
+					success: ({ stdout, stderr }: ChildProcessSuccessMessage) => {
+						const numberOfAudioStreams = Parser.getNumberOfAudioStreams(stdout);
+						return resolve(numberOfAudioStreams > 0);
+					},
+					fail: ({ stderr }: ChildProcessFailMessage) => {
+						logger.error(stderr);
+						return resolve(false);
+					}
+				});
+			} catch (error) {
+				logger.error(error);
+				return resolve(false);
+			}
+
+		});
+	}
+
+	private static addPadding({ input, output, originalDuration, ...rest }, resolve, reject) {
 
 		const basename = path.basename(output);
 		const tempOutput = path.join(path.dirname(output), '__temporary.' + basename);
 
 		let command = CommandFactory.addPadding(input, tempOutput);
 		command.execute({
-			success: ({stdout, stderr, processed}: ChildProcessSuccessMessage) => {
+			success: ({ stdout, stderr, processed }: ChildProcessSuccessMessage) => {
 				if (stderr) {
 					logger.error(stderr);
 				}
@@ -411,10 +405,10 @@ class Normalizer
 		});
 	}
 
-	private static removePadding({input, output, originalDuration, temporaryFile, ...rest}, resolve, reject) {
+	private static removePadding({ input, output, originalDuration, temporaryFile, ...rest }, resolve, reject) {
 		let command = CommandFactory.removePadding(input, output, originalDuration, temporaryFile);
 		command.execute({
-			success: ({stdout, stderr, processed}: ChildProcessSuccessMessage) => {
+			success: ({ stdout, stderr, processed }: ChildProcessSuccessMessage) => {
 				if (stderr) {
 					logger.error(stderr);
 				}
@@ -431,43 +425,42 @@ class Normalizer
 		});
 	}
 
-	public static pad({input, ...rest}) {
-        return new Promise((resolve, reject) => {
-            let command = CommandFactory.getDuration(input);
-            command.execute({
-                success: ({ stdout, stderr, processed} : ChildProcessSuccessMessage ) => {
-                    if (stderr){
-                        logger.error(stderr);
-                    }
+	public static pad({ input, ...rest }) {
+		return new Promise((resolve, reject) => {
+			let command = CommandFactory.getDuration(input);
+			command.execute({
+				success: ({ stdout, stderr, processed }: ChildProcessSuccessMessage) => {
+					if (stderr) {
+						logger.error(stderr);
+					}
 
-                    if (processed < 3) {
-						Normalizer.addPadding({input, originalDuration: processed, ...rest} as any, resolve, reject);
-                    } else {
+					if (processed < 3) {
+						Normalizer.addPadding({ input, originalDuration: processed, ...rest } as any, resolve, reject);
+					} else {
 						return resolve({
 							input,
 							...rest
 						});
 					}
-                },
+				},
 
-                fail: reject
-            });
-        });
-    }
+				fail: reject
+			});
+		});
+	}
 
-	public static measure (
-	{
-		input,
-		output,
-		loudness,
-		...rest
-	})
-	{
+	public static measure(
+		{
+			input,
+			output,
+			loudness,
+			...rest
+		}) {
 		return new Promise((resolve, reject) => {
 			let command = CommandFactory.measure({ input, output, loudness });
 			command.execute({
-				success: ({ stdout, stderr, processed} : ChildProcessSuccessMessage ) => {
-					if (stderr){
+				success: ({ stdout, stderr, processed }: ChildProcessSuccessMessage) => {
+					if (stderr) {
 						logger.error(stderr);
 					}
 					return resolve({
@@ -480,7 +473,7 @@ class Normalizer
 				},
 
 				fail: (error: ChildProcessFailMessage) => {
-					if (error){
+					if (error) {
 						logger.error(error);
 						return resolve({
 							input,
@@ -495,7 +488,7 @@ class Normalizer
 		});
 	}
 
-	public static change (
+	public static change(
 		{
 			input,
 			output,
@@ -503,35 +496,17 @@ class Normalizer
 			measured,
 			padded,
 			...rest
-		})
-		{
-			return new Promise((resolve, reject) => {
-				let command = CommandFactory.change({ input, output, loudness, measured });
-				command.execute({
-					success: ({ stdout, stderr} : { stdout: string, stderr: string }) => {
+		}) {
+		return new Promise((resolve, reject) => {
+			let command = CommandFactory.change({ input, output, loudness, measured });
+			command.execute({
+				success: ({ stdout, stderr }: { stdout: string, stderr: string }) => {
 
-						if (padded) {
-							Normalizer.removePadding({input, output, loudness, measured, padded, ...rest} as any, resolve, reject);
-						} else {
-							return resolve({
-								normalized: true,
-								info: {
-									input,
-									output,
-									loudness,
-									measured,
-									...rest
-								}
-							});
-						}
-
-
-					},
-
-					fail: (error: string) => {
-						return reject({
-							normalized: false,
-							error: error,
+					if (padded) {
+						Normalizer.removePadding({ input, output, loudness, measured, padded, ...rest } as any, resolve, reject);
+					} else {
+						return resolve({
+							normalized: true,
 							info: {
 								input,
 								output,
@@ -541,9 +516,26 @@ class Normalizer
 							}
 						});
 					}
-				});
+
+
+				},
+
+				fail: (error: string) => {
+					return reject({
+						normalized: false,
+						error: error,
+						info: {
+							input,
+							output,
+							loudness,
+							measured,
+							...rest
+						}
+					});
+				}
 			});
-		}
+		});
+	}
 };
 
 class Parser {
@@ -563,20 +555,19 @@ class Parser {
 		"normalization_type" : "dynamic",
 		"target_offset" : "0.02"
 	}*/
-	public static getMeasurements(stdout : string)
-	{
+	public static getMeasurements(stdout: string) {
 		try {
 			let data = stdout.trim().split('\n');
 			let parsed = "";
 
-			for (let i = data.length - 12 ; i < data.length ; ++i){
+			for (let i = data.length - 12; i < data.length; ++i) {
 				let line = data[i].trim().replace('/\t/g', '');
 				parsed += line;
 			}
 
 			let measurements = JSON.parse(parsed);
 			return measurements;
-		} catch (error){
+		} catch (error) {
 			logger.error(error);
 			return null;
 		};
@@ -587,40 +578,58 @@ class Parser {
 	 * @param {string} stdout - Output from the command
 	 * @returns Duration in seconds
 	 */
-	static getDuration(stdout : string): number {
-        try {
-            const durationRegex = /Duration:\s+(\d\d):(\d\d):(\d\d.\d+)/;
-            const match = durationRegex.exec(stdout);
-            if (match) {
-                return 3600 * Number(match[1]) +  60 * Number(match[2]) + Number(match[3]);
-            }
-            logger.error('Did not find duration');
-        } catch (error){
-            logger.error(error);
-            return null;
-        }
-    }
+	static getDuration(stdout: string): number {
+		try {
+			const durationRegex = /Duration:\s+(\d\d):(\d\d):(\d\d.\d+)/;
+			const match = durationRegex.exec(stdout);
+			if (match) {
+				return 3600 * Number(match[1]) + 60 * Number(match[2]) + Number(match[3]);
+			}
+			logger.error('Did not find duration');
+		} catch (error) {
+			logger.error(error);
+			return null;
+		}
+	}
+
+	/**
+	 * @summary Parses ffprobe output to check if the media file has audio streams.
+	 * @param {string} stdout
+	 * @returns {number} number of audio streams
+	 */
+	static getNumberOfAudioStreams(stdout: string): number {
+		const matches = stdout.match(/\/STREAM/g);
+		return matches ? matches.length : 0;
+	}
 }
 
 module.exports.normalize = input => {
-	const validated = Normalizer.validate(input);
-	const normalization = input.loudness.normalization || 'ebuR128';
-	logger.setVerbosity(input.verbose || false );
-
-	return Normalizer.pad(validated).then(paddedInput => {
-
-		switch (normalization) {
-			case 'ebuR128':
-				return Normalizer.measure(paddedInput as any)
-					.then( measured => {
-						return Normalizer.change(measured as any);
-					});
-			case 'rms':
-			case 'peak':
-				return Normalizer.change(paddedInput as any);
-			default:
-				throw new Error('Failed audio normalization.');
-		}
+	return new Promise((resolve, reject) => {
+		logger.setVerbosity(input.verbose || false);
+		const normalization = input.loudness.normalization || 'ebuR128';
+		return Normalizer.validate(input)
+		.then(validated => Normalizer.pad(validated as any))
+		.then(paddedInput => {
+			switch (normalization) {
+				case 'ebuR128':
+					return Normalizer.measure(paddedInput as any)
+						.then(measured => {
+							return resolve(Normalizer.change(measured as any));
+						});
+				case 'rms':
+				case 'peak':
+					return resolve(Normalizer.change(paddedInput as any));
+				default:
+					throw new Error('Not supported normalization type.');
+			}
+		})
+		.catch(error => {
+			logger.error(error);
+			return reject({
+				normalized: false,
+				error: error.message ? error.message : error,
+				...input
+			})
+		})
 	});
-
 };

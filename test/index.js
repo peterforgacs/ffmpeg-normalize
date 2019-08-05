@@ -30,8 +30,8 @@ test('normalize ebu R128', t => {
 
 test('normalize ebu R128 for file with < 3 sec duration', t => {
 	return normalize({
-		input: __dirname + '/sample short.mp3',
-		output: __dirname + '/sample short.processed.mp3',
+		input: __dirname + '/sample.short.mp3',
+		output: __dirname + '/sample.short.processed.mp3',
 		loudness: {
 			normalization: 'ebuR128',
 			target:
@@ -51,4 +51,29 @@ test('normalize ebu R128 for file with < 3 sec duration', t => {
 				t.pass();
 			}
 		})
+});
+
+test('should throw if there is no sound on the input', t => {
+	return normalize({
+		input: __dirname + '/sample.nosound.mp4',
+		output: __dirname + '/sample.nosound.processed.mp4',
+		loudness: {
+			normalization: 'ebuR128',
+			target:
+			{
+				input_i: -23,
+				input_lra: 7.0,
+				input_tp: -2.0
+			}
+		},
+		verbose: true
+	})
+	.then( normalized => {
+		console.error(normalized);
+		t.fail("Should reject when there is no sound.");
+	})
+	.catch(error => {
+		console.log(error);
+		t.pass();
+	})
 });
