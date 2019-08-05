@@ -1,6 +1,6 @@
 {
 	"name": "ffmpeg-normalize",
-	"version": "1.7.0",
+	"version": "1.8.0",
 	"description": "Audio normalization with ffmpeg.",
 	"license": "MIT",
 	"repository": "peterforgacs/ffmpeg-normalize",
