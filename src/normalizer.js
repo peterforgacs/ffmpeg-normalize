@@ -323,7 +323,6 @@ var Normalizer = /** @class */ (function () {
                     success: function (_a) {
                         var stdout = _a.stdout, stderr = _a.stderr;
                         var numberOfAudioStreams = Parser.getNumberOfAudioStreams(stdout);
-                        console.log('#', numberOfAudioStreams);
                         return resolve(numberOfAudioStreams > 0);
                     },
                     fail: function (_a) {
