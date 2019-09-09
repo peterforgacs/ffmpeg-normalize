@@ -318,7 +318,7 @@ var Normalizer = /** @class */ (function () {
     Normalizer.fileHasAudio = function (input) {
         return new Promise(function (resolve) {
             try {
-                var command = new Command({ text: ffprobe_static_1.path + " -i " + input + " -show_streams -select_streams a -loglevel error" });
+                var command = new Command({ text: ffprobe_static_1.path + " -i \"" + input + "\" -show_streams -select_streams a -loglevel error" });
                 command.execute({
                     success: function (_a) {
                         var stdout = _a.stdout, stderr = _a.stderr;
