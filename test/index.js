@@ -77,3 +77,27 @@ test('should throw if there is no sound on the input', t => {
 		t.pass();
 	})
 });
+
+test('should succeed if the filename has spaces', t => {
+	return normalize({
+		input: __dirname + '/sample short with spaces.mp3',
+		output: __dirname + '/sample short with spaces.processed.mp3',
+		loudness: {
+			normalization: 'ebuR128',
+			target:
+				{
+					input_i: -16,
+					input_lra: 7.0,
+					input_tp: -2.0
+				}
+		},
+		verbose: true
+	})
+	.then(normalized => {
+		t.pass();
+	})
+	.catch(error => {
+		console.log(error);
+		t.fail("Should succeed when the filename has spaces.");
+	})
+});

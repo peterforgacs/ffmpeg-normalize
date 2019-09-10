@@ -360,7 +360,7 @@ class Normalizer {
 	private static fileHasAudio(input : string ) : Promise<boolean> {
 		return new Promise( (resolve) => {
 			try {
-				let command = new Command({ text: `${ffprobe_path} -i ${input} -show_streams -select_streams a -loglevel error` });
+				let command = new Command({ text: `${ffprobe_path} -i "${input}" -show_streams -select_streams a -loglevel error` });
 				command.execute({
 					success: ({ stdout, stderr }: ChildProcessSuccessMessage) => {
 						const numberOfAudioStreams = Parser.getNumberOfAudioStreams(stdout);
