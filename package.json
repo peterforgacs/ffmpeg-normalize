@@ -31,7 +31,7 @@
 		"ffprobe-static": "^3.0.0"
 	},
 	"devDependencies": {
-		"@types/ffmpeg-static": "^2.0.0",
+		"@types/ffmpeg-static": "^3.0.0",
 		"@types/node": "^12.6.8",
 		"ava": "^2.2.0",
 		"typescript": "^3.5.3"
