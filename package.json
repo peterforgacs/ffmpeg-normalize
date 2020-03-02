@@ -33,7 +33,7 @@
 	"devDependencies": {
 		"@types/ffmpeg-static": "^2.0.0",
 		"@types/node": "^12.6.8",
-		"ava": "^2.2.0",
+		"ava": "^3.5.0",
 		"typescript": "^3.5.3"
 	}
 }
