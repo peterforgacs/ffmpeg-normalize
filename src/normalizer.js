@@ -277,7 +277,8 @@ var Command = /** @class */ (function () {
         var success = _a.success, fail = _a.fail;
         this.state = 'progress';
         logger.log('Executing: ', this.text);
-        child.exec(this.text, function (error, stdout, stderr) {
+        var cmd = this.text.split(' ');
+        child.execFile(cmd[0], cmd.slice(1), function (error, stdout, stderr) {
             _this.state = 'finished';
             _this.error = error;
             _this.stderr = stderr;
