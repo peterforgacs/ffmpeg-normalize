@@ -63,6 +63,7 @@ class NormalizationSetting {
 }
 
 class Validator {
+	[key: string]: any;
 	private type: string;
 	public validate(
 		{
@@ -165,7 +166,7 @@ class LoudnessFactory {
 	public static build({
 		normalization,
 		target
-	}): Loudness {
+	}: any): Loudness {
 		let validator = LoudnessFactory.buildValidator(normalization);
 		let loudness = new Loudness(target, validator);
 		return loudness;
@@ -190,7 +191,7 @@ class CommandFactory {
 		input,
 		loudness,
 		...rest
-	}) {
+	}: any) {
 		let command = `${ffmpeg_path} -hide_banner `;
 		command += `-i "${input}" `;
 		command += `-af loudnorm=`;
@@ -210,9 +211,11 @@ class CommandFactory {
 	static change({
 		input,
 		output,
+		sampleRate,
 		loudness,
 		measured
-	}) {
+	}: any) {
+		sampleRate = sampleRate || '48k';
 		let command = `${ffmpeg_path} -hide_banner `;
 		command += `-i "${input}" `;
 		command += `-af loudnorm=`;
@@ -233,7 +236,7 @@ class CommandFactory {
 		else {
 			command += " ";
 		}
-		command += `-ar 48k -y `;
+		command += `-ar ${sampleRate} -y `;
 		command += `"${output}"`;
 
 		return new Command({
@@ -334,9 +337,10 @@ class Normalizer {
 		{
 			input,
 			output,
+			sampleRate,
 			loudness,
 			...rest
-		}
+		}: any
 	) {
 		return new Promise((resolve, reject) => {
 			loudness = LoudnessFactory.build(loudness);
@@ -346,6 +350,7 @@ class Normalizer {
 					return resolve({
 						input,
 						output,
+						sampleRate,
 						loudness,
 						...rest
 					})
@@ -379,7 +384,7 @@ class Normalizer {
 		});
 	}
 
-	private static addPadding({ input, output, originalDuration, ...rest }, resolve, reject) {
+	private static addPadding({ input, output, originalDuration, ...rest }: any, resolve: Function, reject: Function) {
 
 		const basename = path.basename(output);
 		const tempOutput = path.join(path.dirname(output), '__temporary.' + basename);
@@ -405,7 +410,7 @@ class Normalizer {
 		});
 	}
 
-	private static removePadding({ input, output, originalDuration, temporaryFile, ...rest }, resolve, reject) {
+	private static removePadding({ input, output, originalDuration, temporaryFile, ...rest }: any, resolve: Function, reject: Function) {
 		let command = CommandFactory.removePadding(input, output, originalDuration, temporaryFile);
 		command.execute({
 			success: ({ stdout, stderr, processed }: ChildProcessSuccessMessage) => {
@@ -425,7 +430,7 @@ class Normalizer {
 		});
 	}
 
-	public static pad({ input, ...rest }) {
+	public static pad({ input, ...rest }: any) {
 		return new Promise((resolve, reject) => {
 			let command = CommandFactory.getDuration(input);
 			command.execute({
@@ -455,7 +460,7 @@ class Normalizer {
 			output,
 			loudness,
 			...rest
-		}) {
+		}: any) {
 		return new Promise((resolve, reject) => {
 			let command = CommandFactory.measure({ input, output, loudness });
 			command.execute({
@@ -492,13 +497,14 @@ class Normalizer {
 		{
 			input,
 			output,
+			sampleRate,
 			loudness,
 			measured,
 			padded,
 			...rest
-		}) {
+		}: any) {
 		return new Promise((resolve, reject) => {
-			let command = CommandFactory.change({ input, output, loudness, measured });
+			let command = CommandFactory.change({ input, output, sampleRate, loudness, measured });
 			command.execute({
 				success: ({ stdout, stderr }: { stdout: string, stderr: string }) => {
 
@@ -510,6 +516,7 @@ class Normalizer {
 							info: {
 								input,
 								output,
+								sampleRate,
 								loudness,
 								measured,
 								...rest
@@ -527,6 +534,7 @@ class Normalizer {
 						info: {
 							input,
 							output,
+							sampleRate,
 							loudness,
 							measured,
 							...rest
@@ -603,7 +611,13 @@ class Parser {
 	}
 }
 
-module.exports.normalize = input => {
+module.exports.normalize = (input: {
+	input: string,
+	output: string,
+	sampleRate: string|number,
+	loudness: any,
+	verbose: boolean,
+}) => {
 	return new Promise((resolve, reject) => {
 		logger.setVerbosity(input.verbose || false);
 		const normalization = input.loudness.normalization || 'ebuR128';

@@ -13,6 +13,7 @@
 		"node": ">=6.0.0"
 	},
 	"scripts": {
+		"build": "tsc --build",
 		"start": "node_modules/.bin/tsc --lib es2015 src/normalizer.ts",
 		"test": "ava"
 	},
@@ -32,6 +33,7 @@
 	},
 	"devDependencies": {
 		"@types/ffmpeg-static": "^2.0.0",
+		"@types/ffprobe-static": "^2.0.0",
 		"@types/node": "^12.6.8",
 		"ava": "^2.2.0",
 		"typescript": "^3.5.3"
