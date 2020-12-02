@@ -34,13 +34,13 @@ var __rest = (this && this.__rest) || function (s, e) {
         }
     return t;
 };
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 var ffmpeg_static_1 = require("ffmpeg-static");
 var ffprobe_static_1 = require("ffprobe-static");
 var child = require("child_process");
 var path = require("path");
 var fs = require("fs");
-var Logger = /** @class */ (function () {
+var Logger = (function () {
     function Logger() {
     }
     Logger.prototype.setVerbosity = function (isVerbose) {
@@ -67,7 +67,7 @@ var Logger = /** @class */ (function () {
     return Logger;
 }());
 var logger = new Logger();
-var NormalizationSetting = /** @class */ (function () {
+var NormalizationSetting = (function () {
     function NormalizationSetting(_a) {
         var base = _a.base, min = _a.min, max = _a.max;
         this.min = min;
@@ -79,7 +79,7 @@ var NormalizationSetting = /** @class */ (function () {
     };
     return NormalizationSetting;
 }());
-var Validator = /** @class */ (function () {
+var Validator = (function () {
     function Validator() {
     }
     Validator.prototype.validate = function (_a) {
@@ -101,7 +101,7 @@ var Validator = /** @class */ (function () {
     };
     return Validator;
 }());
-var EbuValidator = /** @class */ (function (_super) {
+var EbuValidator = (function (_super) {
     __extends(EbuValidator, _super);
     function EbuValidator() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -124,7 +124,7 @@ var EbuValidator = /** @class */ (function (_super) {
     }
     return EbuValidator;
 }(Validator));
-var PeakValidator = /** @class */ (function (_super) {
+var PeakValidator = (function (_super) {
     __extends(PeakValidator, _super);
     function PeakValidator() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
@@ -137,7 +137,7 @@ var PeakValidator = /** @class */ (function (_super) {
     }
     return PeakValidator;
 }(Validator));
-var RmsValidator = /** @class */ (function (_super) {
+var RmsValidator = (function (_super) {
     __extends(RmsValidator, _super);
     function RmsValidator() {
         return _super !== null && _super.apply(this, arguments) || this;
@@ -145,7 +145,7 @@ var RmsValidator = /** @class */ (function (_super) {
     return RmsValidator;
 }(PeakValidator));
 ;
-var Loudness = /** @class */ (function () {
+var Loudness = (function () {
     function Loudness(_a, validator) {
         var input_i = _a.input_i, input_lra = _a.input_lra, input_tp = _a.input_tp, input_thresh = _a.input_thresh, target_offset = _a.target_offset;
         if (validator) {
@@ -165,7 +165,7 @@ var Loudness = /** @class */ (function () {
     }
     return Loudness;
 }());
-var LoudnessFactory = /** @class */ (function () {
+var LoudnessFactory = (function () {
     function LoudnessFactory() {
     }
     LoudnessFactory.build = function (_a) {
@@ -188,7 +188,7 @@ var LoudnessFactory = /** @class */ (function () {
     };
     return LoudnessFactory;
 }());
-var CommandFactory = /** @class */ (function () {
+var CommandFactory = (function () {
     function CommandFactory() {
     }
     CommandFactory.measure = function (_a) {
@@ -209,7 +209,8 @@ var CommandFactory = /** @class */ (function () {
         });
     };
     CommandFactory.change = function (_a) {
-        var input = _a.input, output = _a.output, loudness = _a.loudness, measured = _a.measured;
+        var input = _a.input, output = _a.output, sampleRate = _a.sampleRate, loudness = _a.loudness, measured = _a.measured;
+        sampleRate = sampleRate || '48k';
         var command = ffmpeg_static_1.path + " -hide_banner ";
         command += "-i \"" + input + "\" ";
         command += "-af loudnorm=";
@@ -230,7 +231,7 @@ var CommandFactory = /** @class */ (function () {
         else {
             command += " ";
         }
-        command += "-ar 48k -y ";
+        command += "-ar " + sampleRate + " -y ";
         command += "\"" + output + "\"";
         return new Command({
             text: command,
@@ -265,7 +266,7 @@ var CommandFactory = /** @class */ (function () {
     };
     return CommandFactory;
 }());
-var Command = /** @class */ (function () {
+var Command = (function () {
     function Command(_a) {
         var text = _a.text, processAfter = _a.processAfter;
         this.state = 'initalized';
@@ -294,12 +295,12 @@ var Command = /** @class */ (function () {
     };
     return Command;
 }());
-var Normalizer = /** @class */ (function () {
+var Normalizer = (function () {
     function Normalizer() {
     }
     Normalizer.validate = function (_a) {
         var _this = this;
-        var input = _a.input, output = _a.output, loudness = _a.loudness, rest = __rest(_a, ["input", "output", "loudness"]);
+        var input = _a.input, output = _a.output, sampleRate = _a.sampleRate, loudness = _a.loudness, rest = __rest(_a, ["input", "output", "sampleRate", "loudness"]);
         return new Promise(function (resolve, reject) {
             loudness = LoudnessFactory.build(loudness);
             return _this.fileHasAudio(input)
@@ -307,6 +308,7 @@ var Normalizer = /** @class */ (function () {
                 if (hasAudio) {
                     return resolve(__assign({ input: input,
                         output: output,
+                        sampleRate: sampleRate,
                         loudness: loudness }, rest));
                 }
                 else {
@@ -415,9 +417,9 @@ var Normalizer = /** @class */ (function () {
         });
     };
     Normalizer.change = function (_a) {
-        var input = _a.input, output = _a.output, loudness = _a.loudness, measured = _a.measured, padded = _a.padded, rest = __rest(_a, ["input", "output", "loudness", "measured", "padded"]);
+        var input = _a.input, output = _a.output, sampleRate = _a.sampleRate, loudness = _a.loudness, measured = _a.measured, padded = _a.padded, rest = __rest(_a, ["input", "output", "sampleRate", "loudness", "measured", "padded"]);
         return new Promise(function (resolve, reject) {
-            var command = CommandFactory.change({ input: input, output: output, loudness: loudness, measured: measured });
+            var command = CommandFactory.change({ input: input, output: output, sampleRate: sampleRate, loudness: loudness, measured: measured });
             command.execute({
                 success: function (_a) {
                     var stdout = _a.stdout, stderr = _a.stderr;
@@ -429,6 +431,7 @@ var Normalizer = /** @class */ (function () {
                             normalized: true,
                             info: __assign({ input: input,
                                 output: output,
+                                sampleRate: sampleRate,
                                 loudness: loudness,
                                 measured: measured }, rest)
                         });
@@ -440,6 +443,7 @@ var Normalizer = /** @class */ (function () {
                         error: error,
                         info: __assign({ input: input,
                             output: output,
+                            sampleRate: sampleRate,
                             loudness: loudness,
                             measured: measured }, rest)
                     });
@@ -450,25 +454,9 @@ var Normalizer = /** @class */ (function () {
     return Normalizer;
 }());
 ;
-var Parser = /** @class */ (function () {
+var Parser = (function () {
     function Parser() {
     }
-    /**
-     * @summary Parse the last 12 line of ffmpeg measure output.
-     * @param {string} stdout - Output from the measure command.
-     * @returns {JSON}
-        {
-        "input_i" : "-25.05",
-        "input_tp" : "-4.90",
-        "input_lra" : "1.80",
-        "input_thresh" : "-35.24",
-        "output_i" : "-25.02",
-        "output_tp" : "-5.12",
-        "output_lra" : "1.50",
-        "output_thresh" : "-35.13",
-        "normalization_type" : "dynamic",
-        "target_offset" : "0.02"
-    }*/
     Parser.getMeasurements = function (stdout) {
         try {
             var data = stdout.trim().split('\n');
@@ -486,11 +474,6 @@ var Parser = /** @class */ (function () {
         }
         ;
     };
-    /**
-     * @summary Parse the ffmpeg output to extract the duration of a file.
-     * @param {string} stdout - Output from the command
-     * @returns Duration in seconds
-     */
     Parser.getDuration = function (stdout) {
         try {
             var durationRegex = /Duration:\s+(\d\d):(\d\d):(\d\d.\d+)/;
@@ -505,11 +488,6 @@ var Parser = /** @class */ (function () {
             return null;
         }
     };
-    /**
-     * @summary Parses ffprobe output to check if the media file has audio streams.
-     * @param {string} stdout
-     * @returns {number} number of audio streams
-     */
     Parser.getNumberOfAudioStreams = function (stdout) {
         var matches = stdout.match(/\/STREAM/g);
         return matches ? matches.length : 0;
@@ -535,9 +513,11 @@ module.exports.normalize = function (input) {
                 default:
                     throw new Error('Not supported normalization type.');
             }
-        })["catch"](function (error) {
+        })
+            .catch(function (error) {
             logger.error(error);
             return reject(__assign({ normalized: false, error: error.message ? error.message : error }, input));
         });
     });
 };
+//# sourceMappingURL=normalizer.js.map

@@ -24,6 +24,7 @@ const normalize = require('ffmpeg-normalize');
 normalize({
     input: 'input.mp4',
     output: 'output.mp4',
+    sampleRate: '48k',
     loudness: {
         normalization: 'ebuR128',
         target:
@@ -51,6 +52,7 @@ Parameters:
 
 * input
 * output
+* sampleRate
 * loudness
 * verbose
 
@@ -67,6 +69,14 @@ Type: `string`
 Required: `true`
 
 Path to the output file.
+
+#### sampleRate
+
+Type: `string|number`  
+Required: `false`
+Default: `48k`
+
+Audio sample rate.
 
 #### loudness
 
