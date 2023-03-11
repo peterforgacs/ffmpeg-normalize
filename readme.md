@@ -1,4 +1,4 @@
-# ffmpeg-normalize [![Build Status](https://travis-ci.org/peterforgacs/ffmpeg-normalize.svg?branch=master)](https://travis-ci.org/peterforgacs/ffmpeg-normalize)[![Dependabot Status](https://api.dependabot.com/badges/status?host=github&repo=peterforgacs/ffmpeg-normalize)](https://dependabot.com)
+# ffmpeg-normalize
 
 <p align="center">
   <a href="https://github.com/peterforgacs/ffmpeg-normalize">
@@ -11,7 +11,7 @@
 ## Install
 
 ```bash
-npm install ffmpeg-normalize
+npm install @dharmendrasha/ffmpeg-normalize
 ```
 
 ## Usage
@@ -19,7 +19,7 @@ npm install ffmpeg-normalize
 ### Ebu R128
 
 ```js
-const normalize = require('ffmpeg-normalize');
+const normalize = require('@dharmendrasha/ffmpeg-normalize');
 
 normalize({
     input: 'input.mp4',
@@ -132,4 +132,4 @@ True peak.
 
 ## License
 
-MIT © [Peter Forgacs](http://peterforgacs.github.io)
+MIT © [Dharmendra Soni](https://github.com/dharmendrasha/)

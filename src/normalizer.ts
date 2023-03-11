@@ -1,6 +1,5 @@
 'use strict';
-import { path as ffmpeg_path } from 'ffmpeg-static';
-import { path as ffprobe_path } from 'ffprobe-static';
+import { ffprobePath as ffprobe_path, ffmpegPath as ffmpeg_path  } from 'ffmpeg-ffprobe-static';
 import * as child from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';

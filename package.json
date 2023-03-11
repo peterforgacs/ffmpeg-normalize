@@ -1,16 +1,16 @@
 {
-	"name": "ffmpeg-normalize",
+	"name": "@dharmendrasha/ffmpeg-normalize",
 	"version": "1.8.0",
 	"description": "Audio normalization with ffmpeg.",
 	"license": "MIT",
-	"repository": "peterforgacs/ffmpeg-normalize",
+	"repository": "dharmendrasha/ffmpeg-normalize",
 	"author": {
-		"name": "Peter Forgacs",
-		"email": "peter@sexybuddha.com",
-		"url": "https://peterforgacs.github.io"
+		"name": "Dharmendra Soni",
+		"email": "dharmendrashaheagle@gmail.com",
+		"url": "https://github.com/dharmendrasha"
 	},
 	"engines": {
-		"node": ">=6.0.0"
+		"node": ">=14.0.0"
 	},
 	"scripts": {
 		"start": "node_modules/.bin/tsc --lib es2015 src/normalizer.ts",
@@ -27,11 +27,9 @@
 		"ebu R128"
 	],
 	"dependencies": {
-		"ffmpeg-static": "2.6.0",
-		"ffprobe-static": "^3.0.0"
+		"ffmpeg-ffprobe-static": "4.4.0-rc.11"
 	},
 	"devDependencies": {
-		"@types/ffmpeg-static": "^2.0.0",
 		"@types/node": "^12.6.8",
 		"ava": "^2.2.0",
 		"typescript": "^3.5.3"

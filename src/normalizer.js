@@ -35,8 +35,7 @@ var __rest = (this && this.__rest) || function (s, e) {
     return t;
 };
 exports.__esModule = true;
-var ffmpeg_static_1 = require("ffmpeg-static");
-var ffprobe_static_1 = require("ffprobe-static");
+var ffmpeg_ffprobe_static_1 = require("ffmpeg-ffprobe-static");
 var child = require("child_process");
 var path = require("path");
 var fs = require("fs");
@@ -193,7 +192,7 @@ var CommandFactory = /** @class */ (function () {
     }
     CommandFactory.measure = function (_a) {
         var input = _a.input, loudness = _a.loudness, rest = __rest(_a, ["input", "loudness"]);
-        var command = ffmpeg_static_1.path + " -hide_banner ";
+        var command = ffmpeg_ffprobe_static_1.ffmpegPath + " -hide_banner ";
         command += "-i \"" + input + "\" ";
         command += "-af loudnorm=";
         command += "I=" + loudness.input_i + ":";
@@ -210,7 +209,7 @@ var CommandFactory = /** @class */ (function () {
     };
     CommandFactory.change = function (_a) {
         var input = _a.input, output = _a.output, loudness = _a.loudness, measured = _a.measured;
-        var command = ffmpeg_static_1.path + " -hide_banner ";
+        var command = ffmpeg_ffprobe_static_1.ffmpegPath + " -hide_banner ";
         command += "-i \"" + input + "\" ";
         command += "-af loudnorm=";
         command += "I=" + loudness.input_i + ":";
@@ -238,7 +237,7 @@ var CommandFactory = /** @class */ (function () {
         });
     };
     CommandFactory.getDuration = function (input) {
-        var command = ffmpeg_static_1.path + " -hide_banner -i \"" + input + "\" -f null -";
+        var command = ffmpeg_ffprobe_static_1.ffmpegPath + " -hide_banner -i \"" + input + "\" -f null -";
         return new Command({
             text: command,
             processAfter: function (_a) {
@@ -248,14 +247,14 @@ var CommandFactory = /** @class */ (function () {
         });
     };
     CommandFactory.addPadding = function (input, output) {
-        var command = ffmpeg_static_1.path + " -hide_banner -i \"" + input + "\" -af apad,atrim=0:3 -y \"" + output + "\"";
+        var command = ffmpeg_ffprobe_static_1.ffmpegPath + " -hide_banner -i \"" + input + "\" -af apad,atrim=0:3 -y \"" + output + "\"";
         return new Command({
             text: command,
             processAfter: function () { }
         });
     };
     CommandFactory.removePadding = function (input, output, duration, temporaryFile) {
-        var command = ffmpeg_static_1.path + " -hide_banner -i \"" + input + "\" -af apad,atrim=0:" + duration + " -y \"" + output + "\"";
+        var command = ffmpeg_ffprobe_static_1.ffmpegPath + " -hide_banner -i \"" + input + "\" -af apad,atrim=0:" + duration + " -y \"" + output + "\"";
         return new Command({
             text: command,
             processAfter: function () {
@@ -318,7 +317,7 @@ var Normalizer = /** @class */ (function () {
     Normalizer.fileHasAudio = function (input) {
         return new Promise(function (resolve) {
             try {
-                var command = new Command({ text: ffprobe_static_1.path + " -i \"" + input + "\" -show_streams -select_streams a -loglevel error" });
+                var command = new Command({ text: ffmpeg_ffprobe_static_1.ffprobePath + " -i \"" + input + "\" -show_streams -select_streams a -loglevel error" });
                 command.execute({
                     success: function (_a) {
                         var stdout = _a.stdout, stderr = _a.stderr;
